@@ -1,0 +1,33 @@
+{
+  "name": "auth",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "./src/auth.ts",
+  "types": "./src/auth.ts",
+  "exports": {
+    ".": {
+      "import": "./src/auth.ts",
+      "types": "./src/auth.ts"
+    }
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate": "better-auth generate --output ../database/prisma/schema.prisma --config ./auth.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@better-auth/prisma-adapter": "^1.5.5",
+    "@fastify/cors": "^11.2.0",
+    "better-auth": "^1.5.5",
+    "@repo/database": "workspace:*",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.8.2"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "^1.4.21",
+    "tsx": "^4.21.0"
+  }
+}

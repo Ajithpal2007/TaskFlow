@@ -59,6 +59,7 @@ export const useTasks = (projectId?: string) => {
     onSettled: () => {
       // Swap the fake card for the real database card quietly in the background
       queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["workspace-analytics"] });
     }
   });
 
@@ -93,9 +94,26 @@ export const useTasks = (projectId?: string) => {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["workspace-analytics"] });
     },
+
+
+    
   });
 
+
+const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      const { data } = await apiClient.delete(`/tasks/${taskId}`);
+      return data;
+    },
+    onSettled: () => {
+      // Refresh the board/backlog
+      queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      // Refresh the analytics dashboard instantly
+      queryClient.invalidateQueries({ queryKey: ["workspace-analytics"] });
+    },
+  });
     
   
 
@@ -107,5 +125,7 @@ export const useTasks = (projectId?: string) => {
     updateTask: updateTaskMutation.mutate,
     isCreating: createTaskMutation.isPending,
     isUpdating: updateTaskMutation.isPending,
+    deleteTask: deleteTaskMutation.mutate,
+    isDeleting: deleteTaskMutation.isPending,
   };
 };

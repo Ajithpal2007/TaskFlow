@@ -22,10 +22,22 @@ export const createProjectSchema = z.object({
   workspaceId: z
     .string()
     .cuid("Invalid Workspace ID"),
+
+  wipLimits: z
+    .object({
+      backlog: z.number().min(0, "Backlog limit must be at least 0"),
+      todo: z.number().min(0, "To-Do limit must be at least 0"),
+      inProgress: z.number().min(0, "In Progress limit must be at least 0"),
+      inReview: z.number().min(0, "In Review limit must be at least 0"),
+      done: z.number().min(0, "Done limit must be at least 0"),
+      canceled: z.number().min(0, "Canceled limit must be at least 0"),
+    })
+    .optional(),
 });
 
 export const updateProjectSchema = createProjectSchema.partial().extend({
   id: z.string().cuid(),
+  
 });
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;

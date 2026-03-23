@@ -3,26 +3,25 @@
 import Image from "next/image";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { format, isPast } from "date-fns"; 
+import { format, isPast } from "date-fns";
 
 import { Card, CardContent } from "@repo/ui/components/card";
-import { Badge } from "@repo/ui/components/badge"; 
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import { Badge } from "@repo/ui/components/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
 } from "@repo/ui/components/dropdown-menu";
 
 import { useTasks } from "@/hooks/api/use-tasks";
-import { 
-  ArrowDown, ArrowRight, ArrowUp, AlertCircle, Minus, 
-  CheckSquare, MessageSquare, Calendar, Bug, Sparkles, CheckCircle2 
+import {
+  ArrowDown, ArrowRight, ArrowUp, AlertCircle, Minus,
+  CheckSquare, MessageSquare, Calendar, Bug, Sparkles, CheckCircle2, Bookmark, Hexagon, Layers
 } from "lucide-react";
 
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
 
-// --- CONFIGURATIONS ---
 const priorityConfig = {
   NONE: { icon: Minus, color: "text-gray-500", label: "None" },
   LOW: { icon: ArrowDown, color: "text-blue-500", label: "Low" },
@@ -31,11 +30,14 @@ const priorityConfig = {
   URGENT: { icon: AlertCircle, color: "text-red-500", label: "Urgent" },
 } as const;
 
-// 🟢 New Issue Type Configuration
+// 🟢 The complete Type Config
 const typeConfig = {
   BUG: { icon: Bug, color: "text-red-500" },
   FEATURE: { icon: Sparkles, color: "text-blue-500" },
   TASK: { icon: CheckCircle2, color: "text-green-500" },
+  EPIC: { icon: Hexagon, color: "text-purple-500" },
+  STORY: { icon: Bookmark, color: "text-yellow-500" },
+  SUBTASK: { icon: Layers, color: "text-blue-400" },
 } as const;
 
 type TaskPriority = keyof typeof priorityConfig;
@@ -52,16 +54,18 @@ export function TaskCard({ task }: { task: any }) {
   const isOverdue = task.dueDate && isPast(new Date(task.dueDate));
 
   const handlePriorityChange = (newPriority: TaskPriority) => {
-    if (newPriority === task.priority) return; 
+    if (newPriority === task.priority) return;
     updateTask({ taskId: task.id, updates: { priority: newPriority } });
   };
 
-  const CurrentPriorityIcon = priorityConfig[task.priority as keyof typeof priorityConfig]?.icon || Minus;
-  const currentPriorityColor = priorityConfig[task.priority as keyof typeof priorityConfig]?.color || "text-gray-500";
+ const safePriority = priorityConfig[task.priority as keyof typeof priorityConfig] || priorityConfig.NONE;
+  const safeType = typeConfig[task.type as keyof typeof typeConfig] || typeConfig.TASK;
+
+  const CurrentPriorityIcon = safePriority.icon;
+  const currentPriorityColor = safePriority.color;
   
-  // 🟢 Get the Issue Type Icon (Default to Task if missing)
-  const CurrentTypeIcon = typeConfig[(task.type as IssueType) || "TASK"]?.icon || CheckCircle2;
-  const currentTypeColor = typeConfig[(task.type as IssueType) || "TASK"]?.color || "text-green-500";
+  const CurrentTypeIcon = safeType.icon;
+  const currentTypeColor = safeType.color;
 
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task.id,
@@ -74,19 +78,19 @@ export function TaskCard({ task }: { task: any }) {
   };
 
   return (
-    <div 
+    <div
       ref={setNodeRef}
       style={style}
       {...listeners}
       {...attributes}
-      className="touch-none pb-3 group" 
+      className="touch-none pb-3 group"
     >
-      <Card 
+      <Card
         onClick={() => openTaskDetails(task.id)}
         className="cursor-grab active:cursor-grabbing hover:border-primary/50 transition-all shadow-sm"
       >
         <CardContent className="p-3">
-          
+
           {/* --- TOP ROW: Issue Type, ID, & Priority --- */}
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-1.5">
@@ -95,7 +99,7 @@ export function TaskCard({ task }: { task: any }) {
                 {task.project?.identifier}-{task.sequenceId}
               </span>
             </div>
-            
+
             <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
               <DropdownMenu>
                 <DropdownMenuTrigger className="focus:outline-none hover:bg-muted p-1 rounded transition-colors">
@@ -105,8 +109,8 @@ export function TaskCard({ task }: { task: any }) {
                   {Object.entries(priorityConfig).map(([key, config]) => {
                     const Icon = config.icon;
                     return (
-                      <DropdownMenuItem 
-                        key={key} 
+                      <DropdownMenuItem
+                        key={key}
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePriorityChange(key as TaskPriority);
@@ -122,7 +126,7 @@ export function TaskCard({ task }: { task: any }) {
               </DropdownMenu>
             </div>
           </div>
-          
+
           {/* --- MIDDLE ROW: Title & Tags --- */}
           <p className="text-sm font-medium leading-snug line-clamp-2 mb-2">
             {task.title}
@@ -138,10 +142,10 @@ export function TaskCard({ task }: { task: any }) {
               ))}
             </div>
           )}
-          
+
           {/* --- BOTTOM ROW: Metadata, Dates, Estimates, Assignee --- */}
           <div className="mt-3 flex items-center justify-between">
-            
+
             {/* Left Side: Subtasks, Comments, Due Date */}
             <div className="flex items-center gap-2.5 text-muted-foreground">
               {totalSubtasks > 0 && (
@@ -169,7 +173,7 @@ export function TaskCard({ task }: { task: any }) {
 
             {/* Right Side: Story Points & Assignee */}
             <div className="flex items-center gap-2 shrink-0">
-              
+
               {/* 🟢 Render Story Points / Estimate */}
               {task.storyPoints && (
                 <div className="flex h-5 items-center justify-center rounded bg-secondary px-1.5 text-[10px] font-semibold text-muted-foreground ring-1 ring-inset ring-border" title="Story Points">

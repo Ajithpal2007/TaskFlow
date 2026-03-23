@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { createProjectSchema } from "@repo/validators";
 import { projectService } from "../../services/project.service.js";
 import { requireAuth } from "../../middleware/require-auth.js"; 
+import { prisma } from "@repo/database";
 
 
 export default async function projectRoutes(fastify: FastifyInstance) {
@@ -28,4 +29,25 @@ export default async function projectRoutes(fastify: FastifyInstance) {
     return { data: projects };
   }
 )
+
+// 🟢 PATCH /api/projects/:projectId
+  fastify.patch("/:projectId", { preHandler: requireAuth }, async (request, reply) => {
+    const { projectId } = request.params as { projectId: string };
+    const { name, wipLimits } = request.body as any; // Extract the incoming data
+
+    try {
+      // Update the database!
+      const updatedProject = await prisma.project.update({
+        where: { id: projectId },
+        data: {
+          name: name !== undefined ? name : undefined,
+          wipLimits: wipLimits !== undefined ? wipLimits : undefined,
+        },
+      });
+
+      return reply.send({ data: updatedProject });
+    } catch (error) {
+      return reply.status(500).send({ message: "Failed to update project", error });
+    }
+  });
 }

@@ -3,8 +3,11 @@ import { apiClient } from "@/app/lib/api-client";
 
 import { authClient } from "@/app/lib/auth/client";
 
-
-export function useTask(taskId: string | null, onClose?: () => void) {
+export function useTask(
+  taskId: string | null,
+  onClose?: () => void,
+  selectedTaskId?: string | null,
+) {
   const queryClient = useQueryClient();
 
   const { data: session } = authClient.useSession();
@@ -17,25 +20,26 @@ export function useTask(taskId: string | null, onClose?: () => void) {
       return response.data.data;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
+    initialDataUpdatedAt: 0,
     initialData: () => {
-    // Find all the project board queries in the cache
-    const allQueries = queryClient.getQueriesData({ queryKey: ["tasks"] });
-    
-    for (const [queryKey, tasksArray] of allQueries) {
-      if (Array.isArray(tasksArray)) {
-        // Look for the specific task we just clicked on
-        const foundTask = tasksArray.find((t: any) => t.id === taskId);
-        if (foundTask) {
-          // Instantly return it so the modal opens with 0 latency!
-          return foundTask;
+      // Find all the project board queries in the cache
+      const allQueries = queryClient.getQueriesData({ queryKey: ["tasks"] });
+
+      for (const [queryKey, tasksArray] of allQueries) {
+        if (Array.isArray(tasksArray)) {
+          // Look for the specific task we just clicked on
+          const foundTask = tasksArray.find((t: any) => t.id === taskId);
+          if (foundTask) {
+            // Instantly return it so the modal opens with 0 latency!
+            return foundTask;
+          }
         }
       }
-    }
-    return undefined; // If not found, show the spinner and fetch it normally
-  },
+      return undefined; // If not found, show the spinner and fetch it normally
+    },
     enabled: !!taskId,
   });
-// Inside use-task.ts (or wherever your task hooks live)
+  // Inside use-task.ts (or wherever your task hooks live)
 
   const updateTaskMutation = useMutation({
     // 1. The API Call
@@ -47,7 +51,10 @@ export function useTask(taskId: string | null, onClose?: () => void) {
     // 2. The Instant "Optimistic" Cache Update
     onMutate: async (updates) => {
       // Get the current task so we know what Project Board it belongs to
-      const previousSingleTask: any = queryClient.getQueryData(["task", taskId]);
+      const previousSingleTask: any = queryClient.getQueryData([
+        "task",
+        taskId,
+      ]);
       const projectId = previousSingleTask?.projectId;
 
       // Cancel outgoing fetches so they don't overwrite our instant UI changes
@@ -57,7 +64,9 @@ export function useTask(taskId: string | null, onClose?: () => void) {
       }
 
       // Snapshot the old data for rollbacks
-      const previousTasks = projectId ? queryClient.getQueryData(["tasks", projectId]) : [];
+      const previousTasks = projectId
+        ? queryClient.getQueryData(["tasks", projectId])
+        : [];
 
       // 🟢 INSTANT UPDATE 1: The Modal (This fixes your Sidebar Dropdowns!)
       queryClient.setQueryData(["task", taskId], (oldTask: any) => {
@@ -70,7 +79,7 @@ export function useTask(taskId: string | null, onClose?: () => void) {
         queryClient.setQueryData(["tasks", projectId], (oldTasks: any) => {
           if (!oldTasks) return [];
           return oldTasks.map((task: any) =>
-            task.id === taskId ? { ...task, ...updates } : task
+            task.id === taskId ? { ...task, ...updates } : task,
           );
         });
       }
@@ -83,7 +92,10 @@ export function useTask(taskId: string | null, onClose?: () => void) {
       console.error("Optimistic update failed, rolling back...", err);
       queryClient.setQueryData(["task", taskId], context?.previousSingleTask);
       if (context?.projectId) {
-        queryClient.setQueryData(["tasks", context.projectId], context?.previousTasks);
+        queryClient.setQueryData(
+          ["tasks", context.projectId],
+          context?.previousTasks,
+        );
       }
     },
 
@@ -92,7 +104,9 @@ export function useTask(taskId: string | null, onClose?: () => void) {
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
       queryClient.invalidateQueries({ queryKey: ["task-activity", taskId] });
       if (context?.projectId) {
-        queryClient.invalidateQueries({ queryKey: ["tasks", context.projectId] });
+        queryClient.invalidateQueries({
+          queryKey: ["tasks", context.projectId],
+        });
       }
     },
   });
@@ -101,9 +115,6 @@ export function useTask(taskId: string | null, onClose?: () => void) {
   const updateTask = (updates: any) => {
     updateTaskMutation.mutate(updates);
   };
-
- 
- 
 
   // 2. ADD THIS NEW MUTATION FOR THE CHECKBOXES
   const updateSubtaskMutation = useMutation({
@@ -119,9 +130,9 @@ export function useTask(taskId: string | null, onClose?: () => void) {
         if (!old) return old;
         return {
           ...old,
-          subtasks: old.subtasks?.map((st: any) => 
-            st.id === id ? { ...st, status } : st
-          )
+          subtasks: old.subtasks?.map((st: any) =>
+            st.id === id ? { ...st, status } : st,
+          ),
         };
       });
       return { previousTask };
@@ -168,95 +179,87 @@ export function useTask(taskId: string | null, onClose?: () => void) {
     },
   });
 
- const addCommentMutation = useMutation({
+  const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
-      const { data } = await apiClient.post(`/tasks/${taskId}/comments`, { content });
-      return data.data; 
+      const { data } = await apiClient.post(`/tasks/${taskId}/comments`, {
+        content,
+      });
+      return data.data;
     },
-    
-    onMutate: async (content) => {
-      // 1. Cancel background fetches so they don't overwrite our instant update
-      await queryClient.cancelQueries({ queryKey: ["task", taskId] });
-      
-      // 2. Get the current task so we know which Project Board to update
-      const previousTask: any = queryClient.getQueryData(["task", taskId]);
-      const projectId = previousTask?.projectId;
 
-      // 3. Create a "Fake" comment for instant rendering
+    onMutate: async (content) => {
+      // 🟢 1. DEFINE THE EXACT KEY (Make sure this matches your useQuery at the top of the file!)
+      const QUERY_KEY = ["task", taskId];
+
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const previousTask: any = queryClient.getQueryData(QUERY_KEY);
+
       const optimisticComment = {
         id: `temp-${Date.now()}`,
         content,
         createdAt: new Date().toISOString(),
-        author: { name: "Sending..." } // Gives the user a visual cue that it's saving
+        author: { name: "Sending..." },
       };
 
-      // 🟢 INSTANT FIX 1: The Modal 
-      queryClient.setQueryData(["task", taskId], (oldTask: any) => {
-        if (!oldTask) return oldTask;
+      queryClient.setQueryData(QUERY_KEY, (oldTask: any) => {
+        // SCENARIO 1: The cache is completely empty right now
+        if (!oldTask) {
+          return { id: taskId, comments: [optimisticComment] };
+        }
+
+        // SCENARIO 2: The data is wrapped in an Axios 'data' object
+        if (oldTask.data) {
+          return {
+            ...oldTask,
+            data: {
+              ...oldTask.data,
+              // Force the array to exist even if it was completely missing
+              comments: [...(oldTask.data.comments || []), optimisticComment],
+            },
+          };
+        }
+
+        // SCENARIO 3: The standard flat task object (Most likely scenario)
         return {
           ...oldTask,
-          comments: [...(oldTask.comments || []), optimisticComment]
+          // Force the array to exist even if the Kanban board didn't provide it
+          comments: [...(oldTask.comments || []), optimisticComment],
         };
       });
-
-      // 🟢 INSTANT FIX 2: The Kanban Board
-      if (projectId) {
-        queryClient.setQueryData(["tasks", projectId], (oldTasks: any) => {
-          if (!oldTasks) return oldTasks;
-          return oldTasks.map((t: any) =>
-            t.id === taskId 
-              ? { ...t, comments: [...(t.comments || []), { id: optimisticComment.id }] } 
-              : t
-          );
-        });
-      }
-
-      return { previousTask, projectId };
+      return { previousTask, QUERY_KEY };
     },
 
     onError: (err, newComment, context) => {
-      console.error("Failed to post comment, rolling back...", err);
-      queryClient.setQueryData(["task", taskId], context?.previousTask);
+      if (context?.previousTask) {
+        queryClient.setQueryData(context.QUERY_KEY, context.previousTask);
+      }
     },
 
     onSettled: (data, error, variables, context) => {
-      // 4. Silently refetch both caches in the background to swap the "fake" comment for the real database one
-      queryClient.invalidateQueries({ queryKey: ["task", taskId] });
-      if (context?.projectId) {
-        queryClient.invalidateQueries({ queryKey: ["tasks", context.projectId] });
+      // 🟢 3. Force the exact key to refresh in the background
+      if (context?.QUERY_KEY) {
+        queryClient.invalidateQueries({ queryKey: context.QUERY_KEY });
       }
-    }
-  });
-  
-
-  const linkTaskMutation = useMutation({
-    mutationFn: async ({
-      targetTaskId,
-      type,
-    }: {
-      targetTaskId: string;
-      type: "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO" | "DUPLICATES";
-    }) => {
-      const payload = { targetTaskId, type };
-      const response = await apiClient.post(
-        `/tasks/${taskId}/dependencies`,
-        payload,
-      );
-      return response.data.data;
-    },
-    onSuccess: () => {
-      // Refresh the task so the new linked issue appears instantly
-      queryClient.invalidateQueries({ queryKey: ["task", taskId] });
     },
   });
 
   // 1. Add the Link Creation Mutation
- const linkIssueMutation = useMutation({
+  const linkIssueMutation = useMutation({
     // 1. The API call (We only send the ID and Type to the backend)
-    mutationFn: async ({ targetTaskId, linkType }: { targetTaskId: string, linkType: string, targetTaskData: any }) => {
-      await apiClient.post(`/tasks/${taskId}/links`, { targetTaskId, linkType });
+    mutationFn: async ({
+      targetTaskId,
+      linkType,
+    }: {
+      targetTaskId: string;
+      linkType: string;
+      targetTaskData: any;
+    }) => {
+      await apiClient.post(`/tasks/${taskId}/links`, {
+        targetTaskId,
+        linkType,
+      });
     },
-    
+
     // 2. The Instant UI Update
     onMutate: async ({ linkType, targetTaskData }) => {
       await queryClient.cancelQueries({ queryKey: ["task", taskId] });
@@ -273,12 +276,12 @@ export function useTask(taskId: string | null, onClose?: () => void) {
         if (linkType === "BLOCKS") {
           newTask.blocking = [
             ...(newTask.blocking || []),
-            { id: tempId, blockedBy: targetTaskData }
+            { id: tempId, blockedBy: targetTaskData },
           ];
         } else {
           newTask.blockedBy = [
             ...(newTask.blockedBy || []),
-            { id: tempId, blocking: targetTaskData }
+            { id: tempId, blocking: targetTaskData },
           ];
         }
 
@@ -297,7 +300,7 @@ export function useTask(taskId: string | null, onClose?: () => void) {
     // 4. Silently replace our "fake" badge with the real database data
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
-    }
+    },
   });
 
   // 2. Add the Unlink Mutation
@@ -315,8 +318,12 @@ export function useTask(taskId: string | null, onClose?: () => void) {
         return {
           ...oldTask,
           // Filter out the deleted link from BOTH arrays just to be safe
-          blocking: oldTask.blocking?.filter((dep: any) => dep.blockedBy?.id !== targetTaskId),
-          blockedBy: oldTask.blockedBy?.filter((dep: any) => dep.blocking?.id !== targetTaskId),
+          blocking: oldTask.blocking?.filter(
+            (dep: any) => dep.blockedBy?.id !== targetTaskId,
+          ),
+          blockedBy: oldTask.blockedBy?.filter(
+            (dep: any) => dep.blocking?.id !== targetTaskId,
+          ),
         };
       });
 
@@ -329,10 +336,9 @@ export function useTask(taskId: string | null, onClose?: () => void) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
-    }
+    },
   });
 
-  
   // return { ..., linkIssue: linkIssueMutation.mutate, unlinkIssue: unlinkIssueMutation.mutate }
   return {
     ...taskQuery,
@@ -344,8 +350,8 @@ export function useTask(taskId: string | null, onClose?: () => void) {
     isDeleting: deleteTaskMutation.isPending,
     createSubtask: createSubtaskMutation.mutate,
     isCreatingSubtask: createSubtaskMutation.isPending,
-    linkTask: linkTaskMutation.mutate,
-    isLinkingTask: linkTaskMutation.isPending,
+    linkTask: linkIssueMutation.mutate,
+    isLinkingTask: linkIssueMutation.isPending,
     updateSubtask: updateSubtaskMutation.mutate,
     isUpdatingSubtask: updateSubtaskMutation.isPending,
     isLoadingTask: taskQuery.isLoading,
@@ -353,6 +359,6 @@ export function useTask(taskId: string | null, onClose?: () => void) {
     isLinkingIssue: linkIssueMutation.isPending,
     unlinkIssue: unlinkIssueMutation.mutate,
     isUnlinkingIssue: unlinkIssueMutation.isPending,
-    
   };
 }
+

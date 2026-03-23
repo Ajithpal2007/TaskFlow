@@ -9,14 +9,18 @@ import { Progress } from "@repo/ui/components/progress";
 import { Input } from "@repo/ui/components/input";
 import { Button } from "@repo/ui/components/button";
 
+import { useTasks } from "@/hooks/api/use-tasks";
+
 // 1. DEFINE PROPS
 interface TaskSubtasksProps {
   task: any;
   createSubtask: (title: string, options?: any) => void;
   isCreatingSubtask: boolean;
+  initialSubtasks: any[]; 
+
 }
 
-export function TaskSubtasks({ task, createSubtask, isCreatingSubtask }: TaskSubtasksProps) {
+export function TaskSubtasks({ task, createSubtask, isCreatingSubtask,initialSubtasks=[] }: TaskSubtasksProps) {
   const queryClient = useQueryClient();
 
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);

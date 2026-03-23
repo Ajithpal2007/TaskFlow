@@ -19,6 +19,13 @@ interface UIState {
   isTaskDetailsModalOpen: boolean;
   activeTaskId: string | null;
 
+  isSearchOpen: boolean;
+  setSearchOpen: (open: boolean) => void;
+  toggleSearch: () => void;
+
+  isTaskDetailsOpen: boolean;
+  
+
   openTaskDetails: (taskId: string) => void;
   closeTaskDetails: () => void;
 }
@@ -30,9 +37,10 @@ export const useUIStore = create<UIState>((set) => ({
   selectedTaskId: null,
   isCreateTaskModalOpen: false,
   isCreateProjectModalOpen: false,
-
   isTaskDetailsModalOpen: false,
   activeTaskId: null,
+  isTaskDetailsOpen: false,
+
 
   //  ACTIONS
   openTaskDetails: (taskId) => set({ isTaskDetailsModalOpen: true, activeTaskId: taskId }),
@@ -47,4 +55,8 @@ export const useUIStore = create<UIState>((set) => ({
   
  
   setCreateProjectModalOpen: (open) => set({ isCreateProjectModalOpen: open }),
+
+  isSearchOpen: false,
+  setSearchOpen: (open) => set({ isSearchOpen: open }),
+  toggleSearch: () => set((state) => ({ isSearchOpen: !state.isSearchOpen })),
 }));

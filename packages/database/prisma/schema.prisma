@@ -170,6 +170,8 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  wipLimits   Json? // e.g., { "TODO": 5, "IN_PROGRESS": 3 }
+
   workspaceId String
   workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   

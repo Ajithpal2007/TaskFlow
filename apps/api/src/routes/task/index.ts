@@ -2,8 +2,8 @@ import { FastifyInstance } from "fastify";
 import { createTaskSchema, UpdateTaskInput, updateTaskSchema } from "@repo/validators";
 import { taskService } from "../../services/task.service.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { request } from "http";
-import { success } from "better-auth";
+import { prisma } from "@repo/database";
+
 
 export default async function taskRoutes(fastify: FastifyInstance) {
   // 1. Get all tasks for a specific project
@@ -88,28 +88,21 @@ export default async function taskRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.post("/:taskId/comments", async (request, reply) => {
-    const { taskId } = request.params as { taskId: string };
-    const { content, authorId } = request.body as {
-      content: string;
-      authorId: string;
-    };
+ 
 
-    try {
-      // 1. Let the service handle the heavy lifting
-      const newComment = await taskService.addComment(
-        taskId,
-        content,
-        authorId,
-      );
+fastify.post("/:taskId/comments", { preHandler: [requireAuth] }, async (req, reply) => {
+  const { taskId } = req.params as { taskId: string };
+  const { content } = req.body as { content: string };
+  const userId = (req as any).user.id; 
 
-      // 2. Return the data to the frontend
-      return { data: newComment };
-    } catch (error) {
-      fastify.log.error(error);
-      return reply.status(500).send({ message: "Failed to post comment" });
-    }
-  });
+  try {
+    // Calling your flawless service function!
+    const comment = await taskService.addComment(taskId, content, userId);
+    return reply.send({ success: true, data: comment });
+  } catch (error) {
+    return reply.status(500).send({ error: "Internal Server Error" });
+  }
+});
 
   // 5. Delete a task
   fastify.delete("/:taskId", async (request, reply) => {
@@ -226,4 +219,46 @@ fastify.get("/:taskId/activity", async (request, reply) => {
     return reply.status(500).send({ message: "Failed to fetch activity" });
   }
 });
+
+// POST /tasks/:taskId/links
+fastify.post("/:taskId/links", async (request, reply) => {
+  const { taskId } = request.params as { taskId: string };
+  const { targetTaskId, linkType } = request.body as { targetTaskId: string, linkType: "BLOCKS" | "IS_BLOCKED_BY" };
+
+  if (taskId === targetTaskId) return reply.status(400).send({ error: "Cannot link a task to itself." });
+
+  // The Magic Logic: Figure out who is blocking who
+  const blockingId = linkType === "BLOCKS" ? taskId : targetTaskId;
+  const blockedById = linkType === "BLOCKS" ? targetTaskId : taskId;
+
+  try {
+    const dependency = await prisma.taskDependency.create({
+      data: { blockingId, blockedById }
+    });
+    return reply.send({ success: true, data: dependency });
+  } catch (error) {
+    return reply.status(400).send({ error: "Link already exists." });
+  }
+});
+
+// DELETE /tasks/:taskId/links/:targetTaskId
+fastify.delete("/:taskId/links/:targetTaskId", async (request, reply) => {
+  const { taskId, targetTaskId } = request.params as { taskId: string, targetTaskId: string };
+
+  try {
+    // Delete the relationship regardless of which direction it was created
+    await prisma.taskDependency.deleteMany({
+      where: {
+        OR: [
+          { blockingId: taskId, blockedById: targetTaskId },
+          { blockingId: targetTaskId, blockedById: taskId }
+        ]
+      }
+    });
+    return reply.send({ success: true });
+  } catch (error) {
+    return reply.status(500).send({ error: "Failed to remove link" });
+  }
+});
+
 }

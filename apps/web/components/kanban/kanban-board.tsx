@@ -14,8 +14,6 @@ import {
 } from "@dnd-kit/core";
 
 
-import { Button } from "@repo/ui/components/button";
-
 
 
 const COLUMNS: { label: string; status: TaskStatus }[] = [
@@ -36,7 +34,8 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
   );
 
   // 2. Handle the Drop Logic
-  const handleDragEnd = async (event: any) => {
+ // 1. REMOVED 'async'
+  const handleDragEnd = (event: any) => { 
     const { active, over } = event;
     if (!over) return;
 
@@ -47,8 +46,9 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     const task = tasks.find((t: any) => t.id === taskId);
     
     if (task && task.status !== newStatus) {
-      // Call your API via the TanStack Query hook!
-     await updateTask({ taskId, updates: { status: newStatus } });
+      // 2. REMOVED 'await'
+      // This now fires in the background, allowing the function to finish instantly!
+      updateTask({ taskId, updates: { status: newStatus } }); 
     }
   };
 
@@ -67,7 +67,9 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     key={col.status}
     status={col.status} 
     label={col.label}
+     projectId={projectId}
     tasks={tasks.filter((t: any) => t.status === col.status)}
+   
   />
         ))}
       </div>

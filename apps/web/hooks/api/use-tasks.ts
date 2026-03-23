@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../app/lib/api-client";
 import { CreateTaskInput, UpdateTaskInput } from "@repo/validators";
+import { TaskStatus } from "@repo/database";
 
 export const useTasks = (projectId?: string) => {
   const queryClient = useQueryClient();
@@ -17,14 +18,48 @@ export const useTasks = (projectId?: string) => {
 
   // 2. CREATE: Mutation to add a new task
   const createTaskMutation = useMutation({
-    mutationFn: async (newTask: CreateTaskInput) => {
-      const { data } = await apiClient.post("/tasks", newTask);
+   mutationFn: async ({ title, status, projectId }: any) => {
+      // 🟢 Changed URL to '/tasks' and added projectId to the body
+      const { data } = await apiClient.post(`/tasks`, { 
+        title, 
+        status,
+        projectId ,
+       
+      });
       return data.data;
     },
-    onSuccess: () => {
-      // Refresh the task list automatically
-      queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+    onMutate: async (newTask) => {
+      await queryClient.cancelQueries({ queryKey: ["tasks", projectId] });
+      const previousTasks = queryClient.getQueryData(["tasks", projectId]);
+
+      // 🟢 Build a "Fake" card instantly
+      const optimisticTask = {
+        id: `temp-${Date.now()}`,
+        title: newTask.title,
+        status: newTask.status,
+        projectId: newTask.projectId,
+        priority: "NONE", // Default styling fallbacks
+        type: "TASK",
+        sequenceId: "...",
+        project: { identifier: "NEW" },
+        createdAt: new Date().toISOString(),
+      };
+
+      // 🟢 Inject it straight into the board cache
+      queryClient.setQueryData(["tasks", projectId], (old: any) => {
+        return [...(old || []), optimisticTask];
+      });
+
+      return { previousTasks };
     },
+    onError: (err, variables, context) => {
+      console.error("Failed to create task", err);
+      queryClient.setQueryData(["tasks", projectId], context?.previousTasks);
+    },
+    onSettled: () => {
+      // Swap the fake card for the real database card quietly in the background
+      queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+    }
   });
 
   // 3. UPDATE: Mutation for Drag-and-Drop (Status/Priority changes)

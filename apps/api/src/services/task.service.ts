@@ -5,6 +5,7 @@ export const taskService = {
   /**
    * Create a new task with an auto-incrementing Sequence ID per project
    */
+  
   async createTask(data: CreateTaskInput, creatorId: string) {
     // 1. Start a transaction to ensure atomicity
     return await prisma.$transaction(async (tx) => {
@@ -22,8 +23,8 @@ export const taskService = {
         data: {
           title: data.title,
           description: data.description,
-          status: data.status,
-          priority: data.priority,
+          status: data.status || "TODO",
+          priority: data.priority || "NONE",
           projectId: data.projectId,
           creatorId: creatorId,
           sequenceId: nextSequenceId,
@@ -41,19 +42,27 @@ export const taskService = {
   /**
    * Fetch all tasks for a project, grouped for the Kanban board
    */
-  async getTasksByProjectId(projectId: string) {
+ async getTasksByProjectId(projectId: string) {
     try {
-      // SAFE MODE: Just fetch the tasks, no includes or counts
       return await prisma.task.findMany({
         where: { projectId },
+        // 👇 EVERYTHING YOU WANT TO JOIN MUST BE INSIDE THIS INCLUDE BLOCK
         include: {
           project: { select: { identifier: true } },
           assignee: { select: { id: true, name: true, image: true } },
+          // Moved comments inside!
+          comments: { 
+            select: { id: true } 
+          },
+          // Added subtasks so your card progress counters work!
+          subtasks: {
+            select: { id: true, status: true } 
+          },
+          tags: { select: { id: true, name: true } }
         },
         orderBy: { createdAt: "desc" },
       });
     } catch (error) {
-      // This will force the API to log the exact error to your terminal!
       console.error("PRISMA ERROR in getTasksByProjectId:", error);
       throw error;
     }
@@ -113,14 +122,15 @@ export const taskService = {
     }
 
     // 4. Save the logs to the database in bulk
-    if (logsToCreate.length > 0) {
-      await prisma.activityLog.createMany({
+   if (logsToCreate.length > 0) {
+      // 🚨 REMOVE 'await' here and add '.catch()'
+      prisma.activityLog.createMany({
         data: logsToCreate.map(log => ({
           ...log,
           taskId,
           actorId: userId, 
         }))
-      });
+      }).catch(err => console.error("Failed to save activity logs:", err));
     }
 
     return updatedTask;
@@ -211,8 +221,7 @@ export const taskService = {
     });
   },
 
-  // apps/api/src/services/task.service.ts
-
+  
   // apps/api/src/services/task.service.ts
 
   async createSubtask(
@@ -317,5 +326,8 @@ export const taskService = {
       }
     });
   }
+
+
+  
 };
 

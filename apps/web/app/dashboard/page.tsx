@@ -20,7 +20,7 @@ import { KanbanBoard } from "@/components/kanban/kanban-board";
 import { CreateTaskDialog } from "@/components/kanban/create-task-dialog";
 import { CreateWorkspaceDialog } from "@/components/workspace/create-workspace-dialog";
 import { CreateProjectDialog } from "@/components/project/create-project-dialog";
-import { TaskDetailsDialog } from "@/components/kanban/task-details-dialog";
+import { TaskDetailsDialog } from "@/components/kanban/task-details/index";
 
 export default function Page() {
   // 1. ALL HOOKS MUST GO AT THE TOP

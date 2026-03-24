@@ -1,67 +1,60 @@
 "use client";
 
-import { useState, useEffect } from "react"; 
+import { useState, useEffect } from "react";
 import { AlignLeft } from "lucide-react";
-import { Textarea } from "@repo/ui/components/textarea"; 
+import { RichTextEditor } from "@/components/kanban/rich-text-editor"; 
 
 interface TaskDescriptionProps {
   task: any;
-  updateTask: (updates: any) => void;
+  updateTask: (data: { description: string }) => void;
 }
 
 export function TaskDescription({ task, updateTask }: TaskDescriptionProps) {
-  // 1. Initialize with the actual task description, not just ""
-  const [description, setDescription] = useState(task?.description || "");
-  const [isSavingDesc, setIsSavingDesc] = useState(false);
+  const [description, setDescription] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
-  // 2. Keep it in sync if another user updates the task or you switch tasks
   useEffect(() => {
-    if (task?.description !== undefined) {
-      setDescription(task.description || "");
-    }
+    setDescription(task?.description || "");
   }, [task?.description]);
 
-  if (!task) return null;
-
-  const handleDescriptionBlur = () => {
-    // Only save to the database if the text ACTUALLY changed
-    if (description !== (task.description || "")) {
-      setIsSavingDesc(true);
-      
+  const handleSave = () => {
+    if (description !== (task?.description || "")) {
       updateTask({ description });
-      
-      // Flash the "Saving..." text for a quick UX confirmation
-      setTimeout(() => setIsSavingDesc(false), 1500); 
     }
   };
 
-  // 3. Removed the Sticky Header wrappers. It's just a clean content block now!
-  return (
-    <div className="space-y-4 px-8 pt-4">
-      
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-semibold text-lg text-foreground">
-          <AlignLeft className="h-5 w-5 text-muted-foreground" />
-          Description
-        </div>
-        
-        {isSavingDesc && (
-          <span className="text-xs font-medium text-muted-foreground animate-pulse">
-            Saving...
-          </span>
-        )}
-      </div>
+  // 🟢 Helper to check if Tiptap is actually empty (it sometimes leaves empty <p> tags)
+  const isEmpty = !description || description === "<p></p>" || description === "";
 
-      <div className="ml-7">
-        <Textarea
-          placeholder="Add a more detailed description..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onBlur={handleDescriptionBlur}
-          className="min-h-[140px] resize-none border-transparent bg-muted/10 hover:bg-muted/30 focus:bg-background focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all text-sm"
-        />
+  return (
+    <div className="px-6 md:px-8 pt-4 pb-6 space-y-3">
+      <div className="flex items-center gap-2 font-semibold text-lg text-foreground">
+        <AlignLeft className="h-5 w-5 text-muted-foreground" />
+        Description
       </div>
       
+      <div className="ml-7">
+        {/* 🟢 THE EMPTY STATE PLACEHOLDER */}
+        {!isEditing && isEmpty && (
+          <div
+            onClick={() => setIsEditing(true)}
+            className="py-6 px-4 text-sm text-muted-foreground bg-muted/20 hover:bg-muted/50 border border-dashed rounded-lg cursor-text transition-all text-center"
+          >
+            No description provided. Click to add one.
+          </div>
+        )}
+
+        {/* 🟢 HIDE THE EDITOR WHEN EMPTY & NOT EDITING */}
+        <div className={!isEditing && isEmpty ? "hidden" : "block"}>
+          <RichTextEditor 
+            value={description} 
+            onChange={setDescription} 
+            onBlur={handleSave}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+          />
+        </div>
+      </div>
     </div>
   );
 }

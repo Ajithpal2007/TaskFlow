@@ -1,31 +1,34 @@
 "use client";
 
+import { useBoardSocket } from "@/hooks/use-board-socket";
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import { useTasks } from "@/hooks/api/use-tasks";
 import { KanbanColumn } from "./kanban-column";
 import { TaskStatus } from "@repo/database";
-import { 
-  DndContext, 
-  PointerSensor, 
-  useSensor, 
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
   useSensors,
-  closestCorners 
+  closestCorners
 } from "@dnd-kit/core";
 
 // 🟢 New UI Imports for the Filter Bar
 import { Input } from "@repo/ui/components/input";
 import { Button } from "@repo/ui/components/button";
-import { Search, X, SlidersHorizontal,AlertTriangle } from "lucide-react";
+import { Search, X, SlidersHorizontal, AlertTriangle } from "lucide-react";
 
 const COLUMNS: { label: string; status: TaskStatus; wipLimit?: number }[] = [
   { label: "Backlog", status: "BACKLOG" },
-  { label: "Todo", status: "TODO", wipLimit: 5 }, 
+  { label: "Todo", status: "TODO", wipLimit: 5 },
   { label: "In Progress", status: "IN_PROGRESS", wipLimit: 3 }, // Agile standard: strict limit here
   { label: "Done", status: "DONE" },
 ];
 export function KanbanBoard({ projectId, workspaceId }: { projectId: string; workspaceId: string }) {
   const { tasks, isLoading, updateTask, error } = useTasks(projectId);
+
+  const { broadcastUpdate } = useBoardSocket(projectId);
 
   // 🟢 1. The Filter State
   const [searchQuery, setSearchQuery] = useState("");
@@ -35,7 +38,8 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  const handleDragEnd = (event: any) => { 
+
+  const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (!over) return;
 
@@ -44,7 +48,15 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
 
     const task = tasks?.find((t: any) => t.id === taskId);
     if (task && task.status !== newStatus) {
-      updateTask({ taskId, updates: { status: newStatus } }); 
+
+      // 🟢 1. INSTANT BROADCAST: Tell the room immediately!
+      broadcastUpdate({
+        type: "TASK_MOVED",
+        payload: { taskId, newStatus }
+      });
+
+      // 🟢 2. BACKGROUND SAVE: Let the database update silently in the background
+      updateTask({ taskId, updates: { status: newStatus } });
     }
   };
 
@@ -65,7 +77,7 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
     if (!tasks) return [];
     return tasks.filter((task: any) => {
       // Check Search (Matches Title or Sequence ID like "TASK-12")
-      const matchesSearch = searchQuery === "" || 
+      const matchesSearch = searchQuery === "" ||
         task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.sequenceId?.toString().includes(searchQuery);
 
@@ -81,10 +93,10 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
 
   return (
     <div className="flex flex-col h-full w-full">
-      
+
       {/* --- 🟢 THE FILTER BAR --- */}
       <div className="flex flex-wrap items-center gap-4 pb-4 mb-2 border-b border-border/40 shrink-0">
-        
+
         {/* Search Input */}
         <div className="relative w-72">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -107,9 +119,8 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
                   key={user.id}
                   onClick={() => setAssigneeFilter(isActive ? null : user.id)}
                   title={`Filter by ${user.name}`}
-                  className={`relative h-7 w-7 rounded-full border-2 overflow-hidden transition-all ${
-                    isActive ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-primary/50 opacity-70 hover:opacity-100"
-                  }`}
+                  className={`relative h-7 w-7 rounded-full border-2 overflow-hidden transition-all ${isActive ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-primary/50 opacity-70 hover:opacity-100"
+                    }`}
                 >
                   {user.image ? (
                     <Image src={user.image} alt={user.name} fill className="object-cover" />
@@ -126,9 +137,9 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
 
         {/* Clear Filters Button */}
         {(searchQuery || assigneeFilter) && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => { setSearchQuery(""); setAssigneeFilter(null); }}
             className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground ml-auto"
           >
@@ -139,16 +150,16 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
       </div>
 
       {/* --- THE CANVAS (Board) --- */}
-      <DndContext 
-        sensors={sensors} 
-        collisionDetection={closestCorners} 
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
         onDragEnd={handleDragEnd}
       >
         <div className="flex flex-1 gap-4 overflow-x-auto pb-4">
           {COLUMNS.map((col) => (
             <KanbanColumn
               key={col.status}
-              status={col.status} 
+              status={col.status}
               label={col.label}
               projectId={projectId}
               workspaceId={workspaceId}

@@ -1,13 +1,10 @@
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
-  
 
 datasource db {
   provider = "postgresql"
-
 }
 
 enum WorkspaceRole {
@@ -55,9 +52,8 @@ enum DependencyType {
   DUPLICATES
 }
 
-
 model User {
-  id            String    @id  @default(cuid())
+  id            String    @id @default(cuid())
   name          String
   email         String
   emailVerified Boolean   @default(false)
@@ -68,19 +64,20 @@ model User {
   accounts      Account[]
 
   // App Relations
-  workspaces    WorkspaceMember[]
-  projects      ProjectMember[]
-  createdTasks  Task[]            @relation("CreatedTasks")
-  assignedTasks Task[]            @relation("AssignedTasks")
-  comments      Comment[]
-  activityLogs  ActivityLog[]
+  workspaces      WorkspaceMember[]
+  projects        ProjectMember[]
+  createdTasks    Task[]                @relation("CreatedTasks")
+  assignedTasks   Task[]                @relation("AssignedTasks")
+  comments        Comment[]
+  activityLogs    ActivityLog[]
+  sentInvitations WorkspaceInvitation[]
 
   @@unique([email])
   @@map("user")
 }
 
 model Session {
-  id        String   @id  @default(cuid())
+  id        String   @id @default(cuid())
   expiresAt DateTime
   token     String
   createdAt DateTime @default(now())
@@ -96,7 +93,7 @@ model Session {
 }
 
 model Account {
-  id                    String    @id  @default(cuid())
+  id                    String    @id @default(cuid())
   accountId             String
   providerId            String
   userId                String
@@ -116,7 +113,7 @@ model Account {
 }
 
 model Verification {
-  id         String   @id  @default(cuid())
+  id         String   @id @default(cuid())
   identifier String
   value      String
   expiresAt  DateTime
@@ -128,30 +125,31 @@ model Verification {
 }
 
 model Workspace {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique // For URLs: taskflow.com/acme-corp
-  logo        String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique // For URLs: taskflow.com/acme-corp
+  logo      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   members     WorkspaceMember[]
   projects    Project[]
-  tags        Tag[]             // Shared tags across the workspace
+  tags        Tag[] // Shared tags across the workspace
+  invitations WorkspaceInvitation[]
 
   @@map("workspaces")
 }
 
 model WorkspaceMember {
-  id          String        @id @default(cuid())
-  role        WorkspaceRole @default(MEMBER)
-  createdAt   DateTime      @default(now())
-  
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id        String        @id @default(cuid())
+  role      WorkspaceRole @default(MEMBER)
+  createdAt DateTime      @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   workspaceId String
-  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, workspaceId])
   @@index([workspaceId])
@@ -170,13 +168,13 @@ model Project {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  wipLimits   Json? // e.g., { "TODO": 5, "IN_PROGRESS": 3 }
+  wipLimits Json? // e.g., { "TODO": 5, "IN_PROGRESS": 3 }
 
   workspaceId String
-  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  
-  members     ProjectMember[]
-  tasks       Task[]
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  members ProjectMember[]
+  tasks   Task[]
 
   @@unique([workspaceId, identifier]) // Identifiers must be unique per workspace
   @@index([workspaceId])
@@ -184,15 +182,15 @@ model Project {
 }
 
 model ProjectMember {
-  id          String      @id @default(cuid())
-  role        ProjectRole @default(CONTRIBUTOR)
-  createdAt   DateTime    @default(now())
+  id        String      @id @default(cuid())
+  role      ProjectRole @default(CONTRIBUTOR)
+  createdAt DateTime    @default(now())
 
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  projectId   String
-  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId])
   @@index([projectId])
@@ -205,7 +203,7 @@ model ProjectMember {
 
 model Task {
   id          String       @id @default(cuid())
-  sequenceId  Int          // The "123" in "ENG-123". Handled by your API logic.
+  sequenceId  Int // The "123" in "ENG-123". Handled by your API logic.
   title       String
   description String?      @db.Text
   status      TaskStatus   @default(TODO)
@@ -213,33 +211,33 @@ model Task {
   type        TaskType     @default(TASK)
   storyPoints Int?
   dueDate     DateTime?
-  
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Foreign Keys
-  projectId   String
-  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  creatorId   String
-  creator     User         @relation("CreatedTasks", fields: [creatorId], references: [id])
+  creatorId String
+  creator   User   @relation("CreatedTasks", fields: [creatorId], references: [id])
 
-  assigneeId  String?
-  assignee    User?        @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  assigneeId String?
+  assignee   User?   @relation("AssignedTasks", fields: [assigneeId], references: [id])
 
   // Hierarchical Relations (Epics -> Tasks -> Subtasks)
   parentTaskId String?
-  parentTask   Task?       @relation("Subtasks", fields: [parentTaskId], references: [id])
-  subtasks     Task[]      @relation("Subtasks")
+  parentTask   Task?   @relation("Subtasks", fields: [parentTaskId], references: [id])
+  subtasks     Task[]  @relation("Subtasks")
 
   // Many-to-Many & Complex Relations
-  tags         Tag[]       @relation("TaskTags")
+  tags         Tag[]         @relation("TaskTags")
   comments     Comment[]
   activityLogs ActivityLog[]
 
   // Task Dependencies (e.g., Task A blocks Task B)
-  blocking     TaskDependency[] @relation("TaskBlocking")
-  blockedBy    TaskDependency[] @relation("TaskBlockedBy")
+  blocking  TaskDependency[] @relation("TaskBlocking")
+  blockedBy TaskDependency[] @relation("TaskBlockedBy")
 
   @@unique([projectId, sequenceId]) // Ensures ENG-1, ENG-2 uniqueness
   @@index([projectId, status])
@@ -252,14 +250,14 @@ model Task {
 // ==========================================
 
 model TaskDependency {
-  id            String         @id @default(cuid())
-  type          DependencyType @default(BLOCKS)
+  id   String         @id @default(cuid())
+  type DependencyType @default(BLOCKS)
 
-  blockingId    String
-  blocking      Task           @relation("TaskBlocking", fields: [blockingId], references: [id], onDelete: Cascade)
+  blockingId String
+  blocking   Task   @relation("TaskBlocking", fields: [blockingId], references: [id], onDelete: Cascade)
 
-  blockedById   String
-  blockedBy     Task           @relation("TaskBlockedBy", fields: [blockedById], references: [id], onDelete: Cascade)
+  blockedById String
+  blockedBy   Task   @relation("TaskBlockedBy", fields: [blockedById], references: [id], onDelete: Cascade)
 
   @@unique([blockingId, blockedById])
   @@map("task_dependencies")
@@ -271,43 +269,65 @@ model Comment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
 
   @@index([taskId])
   @@map("comments")
 }
 
 model Tag {
-  id          String    @id @default(cuid())
-  name        String
-  color       String    @default("#E2E8F0")
+  id    String @id @default(cuid())
+  name  String
+  color String @default("#E2E8F0")
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  tasks       Task[]    @relation("TaskTags")
+  tasks Task[] @relation("TaskTags")
 
   @@unique([workspaceId, name])
   @@map("tags")
 }
 
 model ActivityLog {
-  id          String   @id @default(cuid())
-  action      String   // e.g., "STATUS_CHANGED", "ASSIGNEE_CHANGED"
-  oldValue    String?  @db.Text
-  newValue    String?  @db.Text
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  action    String // e.g., "STATUS_CHANGED", "ASSIGNEE_CHANGED"
+  oldValue  String?  @db.Text
+  newValue  String?  @db.Text
+  createdAt DateTime @default(now())
 
-  taskId      String
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  actorId     String
-  actor       User     @relation(fields: [actorId], references: [id])
+  actorId String
+  actor   User   @relation(fields: [actorId], references: [id])
 
   @@index([taskId])
   @@map("activity_logs")
+}
+
+model WorkspaceInvitation {
+  id    String @id @default(cuid())
+  email String
+  token String @unique
+  role  String @default("MEMBER") // Could be ADMIN, MEMBER, VIEWER
+
+  // Relations
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  inviterId String
+  inviter   User   @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  // Security & Timestamps
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Constraints
+  @@unique([email, workspaceId]) // Prevents spamming the same email for the same workspace
+  @@index([token]) // Ultra-fast lookups when they click the magic link
 }

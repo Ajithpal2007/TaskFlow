@@ -7,6 +7,9 @@ import { tagService } from "../../services/tag.service.js";
 import { analyticsService } from "../../services/analytics.service";
 import { prisma } from "@repo/database";
 
+import { sendInviteEmail } from "../../services/email.service.js";
+import crypto from "crypto";
+
 export default async function workspaceRoutes(fastify: FastifyInstance) {
   // POST /api/workspaces
   fastify.post(
@@ -53,13 +56,13 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
   // 🟢 Make sure preHandler: requireAuth is here!
   fastify.get("/:slug", { preHandler: requireAuth }, async (request, reply) => {
     const { slug } = request.params as { slug: string };
-    
+
     // Now that requireAuth is present, this will be your REAL user ID!
-    const userId = (request as any).user.id; 
+    const userId = (request as any).user.id;
 
     try {
       const workspace = await workspaceService.getWorkspaceBySlug(slug, userId);
-      
+
       if (!workspace) {
         return reply.code(404).send({ message: "Workspace not found" });
       }
@@ -150,67 +153,248 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.get("/:workspaceId/analytics", { preHandler: requireAuth }, async (request, reply) => {
-  const { workspaceId } = request.params as { workspaceId: string };
+  fastify.get(
+    "/:workspaceId/analytics",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
 
-  try {
-    const analytics = await analyticsService.getWorkspaceAnalytics(workspaceId);
-    return reply.send({ data: analytics });
-  } catch (error) {
-    request.log.error(error);
-    return reply.code(500).send({ message: "Failed to load analytics" });
-  }
-});
+      try {
+        const analytics =
+          await analyticsService.getWorkspaceAnalytics(workspaceId);
+        return reply.send({ data: analytics });
+      } catch (error) {
+        request.log.error(error);
+        return reply.code(500).send({ message: "Failed to load analytics" });
+      }
+    },
+  );
 
-// 🟢 GET /api/workspaces/:workspaceId/search?q=something
-  fastify.get("/:workspaceId/search", { preHandler: requireAuth }, async (request, reply) => {
-    const { workspaceId } = request.params as { workspaceId: string };
-    const { q } = request.query as { q?: string };
+  // 🟢 GET /api/workspaces/:workspaceId/search?q=something
+  fastify.get(
+    "/:workspaceId/search",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
+      const { q } = request.query as { q?: string };
 
-    if (!q || q.trim() === "") {
-      return reply.send({ data: { tasks: [], projects: [] } });
-    }
+      if (!q || q.trim() === "") {
+        return reply.send({ data: { tasks: [], projects: [] } });
+      }
 
-    // 🟢 1. Check if the search term is a valid number
-    const searchNumber = parseInt(q, 10);
-    const isSearchNumber = !isNaN(searchNumber);
+      // 🟢 1. Check if the search term is a valid number
+      const searchNumber = parseInt(q, 10);
+      const isSearchNumber = !isNaN(searchNumber);
 
-    try {
-      // 2. Search Tasks
-      const tasks = await prisma.task.findMany({
-        where: {
-          project: { workspaceId },
-          OR: [
-            // Always search the string fields
-            { title: { contains: q, mode: 'insensitive' } },
-            
-            // 🟢 3. ONLY add sequenceId to the search if 'q' is actually a number!
-            ...(isSearchNumber ? [{ sequenceId: searchNumber }] : [])
-          ]
-        },
-        take: 8, 
-        include: {
-          project: { select: { id: true, name: true, identifier: true } }
+      try {
+        // 2. Search Tasks
+        const tasks = await prisma.task.findMany({
+          where: {
+            project: { workspaceId },
+            OR: [
+              // Always search the string fields
+              { title: { contains: q, mode: "insensitive" } },
+
+              // 🟢 3. ONLY add sequenceId to the search if 'q' is actually a number!
+              ...(isSearchNumber ? [{ sequenceId: searchNumber }] : []),
+            ],
+          },
+          take: 8,
+          include: {
+            project: { select: { id: true, name: true, identifier: true } },
+          },
+        });
+
+        // 3. Search Projects
+        const projects = await prisma.project.findMany({
+          where: {
+            workspaceId,
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { identifier: { contains: q, mode: "insensitive" } },
+            ],
+          },
+          take: 3,
+        });
+
+        return reply.send({ data: { tasks, projects } });
+      } catch (error) {
+        return reply.code(500).send({ message: "Search failed", error });
+      }
+    },
+  );
+
+  fastify.post(
+    "/:slug/invites",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      console.log("🔥 INVITE ROUTE HIT! Params:", request.params);
+
+      const { slug } = request.params as { slug: string };
+      const { email, role } = request.body as { email: string; role?: string };
+      const workspaceId = slug;
+
+      // 🟢 3. Because of requireAuth, request.user is now 100% guaranteed to exist!
+      const inviterId = (request as any).user.id;
+      try {
+        // 🟢 THE VAULT: Check if the inviter is actually an ADMIN or OWNER
+        const inviterMembership = await prisma.workspaceMember.findFirst({
+          where: {
+            workspaceId: workspaceId,
+            userId: inviterId,
+          }
+        });
+
+        if (!inviterMembership || (inviterMembership.role !== "OWNER" && inviterMembership.role !== "ADMIN")) {
+          return reply.status(403).send({ 
+            success: false, 
+            message: "Forbidden: You do not have permission to invite members to this workspace." 
+          });
         }
-      });
+        const token = crypto.randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-      // 3. Search Projects
-      const projects = await prisma.project.findMany({
-        where: {
-          workspaceId,
-          OR: [
-            { name: { contains: q, mode: 'insensitive' } },
-            { identifier: { contains: q, mode: 'insensitive' } }
-          ]
-        },
-        take: 3,
-      });
+        // Fetch Workspace & User
+        const workspace = await prisma.workspace.findUnique({
+          where: { id: workspaceId },
+        });
+        const inviter = await prisma.user.findUnique({
+          where: { id: inviterId },
+        });
 
-      return reply.send({ data: { tasks, projects } });
-    } catch (error) {
-      return reply.code(500).send({ message: "Search failed", error });
-    }
-  });
+        if (!workspace || !inviter) {
+          return reply
+            .status(404)
+            .send({ success: false, message: "Workspace or User not found" });
+        }
 
+        // Save to DB
+        await prisma.workspaceInvitation.upsert({
+          where: { email_workspaceId: { email, workspaceId } },
+          update: { token, expiresAt, role: role || "MEMBER", inviterId },
+          create: {
+            email,
+            token,
+            expiresAt,
+            role: role || "MEMBER",
+            workspaceId,
+            inviterId,
+          },
+        });
+
+        // Send Email
+        await sendInviteEmail(
+          email,
+          inviter.name || "A teammate",
+          workspace.name,
+          token,
+        );
+
+        console.log("✅ Email successfully sent to:", email);
+        return reply
+          .status(200)
+          .send({ success: true, message: "Invitation sent!" });
+      } catch (error) {
+        console.error("❌ CRASH IN INVITE ROUTE:", error);
+        return reply
+          .status(500)
+          .send({ success: false, message: "Internal Server Error" });
+      }
+    },
+  );
+
+  // 🟢 ROUTE: Accept an Invitation
+  fastify.post(
+    "/invites/accept",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { token } = request.body as { token: string };
+      const userId = (request as any).user.id;
+
+      try {
+        // 1. Find the pending invitation in the database
+        const invite = await prisma.workspaceInvitation.findUnique({
+          where: { token },
+        });
+
+        // 2. Security Check: Does it exist? Is it expired?
+        if (!invite) {
+          return reply
+            .status(404)
+            .send({
+              success: false,
+              message: "Invalid or expired invitation.",
+            });
+        }
+
+        if (invite.expiresAt < new Date()) {
+          // Clean up expired invite
+          await prisma.workspaceInvitation.delete({ where: { id: invite.id } });
+          return reply
+            .status(400)
+            .send({ success: false, message: "This invitation has expired." });
+        }
+
+        // Add this right before you check if they are an existingMember
+        const loggedInUser = await prisma.user.findUnique({
+          where: { id: userId },
+        });
+
+        if (loggedInUser?.email !== invite.email) {
+          return reply.status(403).send({
+            success: false,
+            message: `This invite was sent to ${invite.email}. Please log in with that account.`,
+          });
+        }
+        // 3. Check if the user is ALREADY a member (prevents crashing if they click twice)
+        // Note: Change 'workspaceMember' to whatever you named your bridging table in schema.prisma!
+        const existingMember = await prisma.workspaceMember.findFirst({
+          where: {
+            workspaceId: invite.workspaceId,
+            userId: userId,
+          },
+        });
+
+        if (!existingMember) {
+          // 4. Officially add them to the Workspace!
+          let finalRole = invite.role;
+          if (finalRole === "VIEWER") {
+            finalRole = "GUEST";
+          }
+
+          // 🟢 2. Officially add them to the Workspace!
+          await prisma.workspaceMember.create({
+            data: {
+              workspaceId: invite.workspaceId,
+              userId: userId,
+              // 🟢 3. THE FIX: Cast strictly to the allowed WorkspaceRole Enum strings
+              role: finalRole as "ADMIN" | "MEMBER" | "GUEST",
+            },
+          });
+        }
+
+        // 5. Delete the invitation so it can never be used again
+        await prisma.workspaceInvitation.delete({
+          where: { id: invite.id },
+        });
+
+        console.log(
+          `✅ User ${userId} successfully joined workspace ${invite.workspaceId}`,
+        );
+
+        // Return the workspaceId so the frontend knows where to redirect them!
+        return reply.status(200).send({
+          success: true,
+          workspaceId: invite.workspaceId,
+          message: "Welcome to the workspace!",
+        });
+      } catch (error) {
+        console.error("❌ CRASH IN ACCEPT INVITE ROUTE:", error);
+        return reply
+          .status(500)
+          .send({ success: false, message: "Internal Server Error" });
+      }
+    },
+  );
 }
 

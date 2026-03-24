@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { apiClient } from "../../app/lib/api-client";
+import { toast } from "sonner"
 
 // --- 1. EXISTING FETCH HOOK ---
 export const useWorkspace = (slug: string) => {
@@ -36,19 +37,26 @@ export function useUpdateWorkspace() {
 // --- 3. NEW MUTATION: INVITE MEMBER ---
 export function useInviteMember() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ workspaceId, email }: { workspaceId: string; email: string }) => {
-      const { data } = await apiClient.post(`/workspaces/${workspaceId}/members`, { email });
-      return data.data;
+      // 🟢 Calling the Fastify route we built earlier
+      const { data } = await apiClient.post(`/workspaces/${workspaceId}/invites`, {
+        email,
+        role: "MEMBER", // Hardcoding to MEMBER for now, can add a dropdown later
+      });
+      return data;
     },
-    onSuccess: (_, variables) => {
-      // Refresh the workspace data so the new member appears in the UI
-      queryClient.invalidateQueries({ queryKey: ["workspace", variables.workspaceId] });
+    onSuccess: (data, variables) => {
+      // Optional: If you want to show pending invites on the UI, you would invalidate a query here.
+      // queryClient.invalidateQueries({ queryKey: ["workspace-invites", variables.workspaceId] });
+      console.log("Invite sent successfully!");
+    },
+    onError: (error: any) => {
+      console.error("Failed to send invite:", error.response?.data?.message || error.message);
     },
   });
 }
-
 // Add this inside use-workspace.ts
 export const useWorkspaceAnalytics = (workspaceId: string) => {
   return useQuery({
@@ -60,3 +68,4 @@ export const useWorkspaceAnalytics = (workspaceId: string) => {
     enabled: !!workspaceId,
   });
 };
+

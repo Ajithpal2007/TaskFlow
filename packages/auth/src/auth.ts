@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@repo/database";
 
 export const getAuth = () => betterAuth({
+    baseURL: process.env.API_URL || "http://localhost:4000",
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
@@ -20,7 +21,7 @@ export const getAuth = () => betterAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
         },
     },
-  baseURL: "http://localhost:4000",
+  
   secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: ["http://localhost:3000"],
  advanced: {

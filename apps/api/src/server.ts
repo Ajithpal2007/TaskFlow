@@ -3,12 +3,28 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import { authRoutes } from "./routes/users/index.js";
 
+import websocket from "@fastify/websocket";
+
 export async function buildServer() {
+  
+
   const fastify = Fastify({
     logger:
       process.env.NODE_ENV !== "production"
         ? { transport: { target: "pino-pretty" } }
         : true,
+  });
+
+  await fastify.register(websocket);
+
+  // 🟢 Add this Global Test Route to bypass all middleware!
+  fastify.get("/ws-test", { websocket: true }, (connection, request) => {
+    console.log("🟢 GLOBAL WS TEST HIT!");
+    connection.send("Hello from the Global Bypass Route!");
+    
+    connection.on("message", (msg) => {
+      console.log("Global received:", msg.toString());
+    });
   });
 
   await fastify.register(cors, {
@@ -45,6 +61,10 @@ export async function buildServer() {
   await fastify.register(import("./routes/task/index.js"), {
   prefix: "/api/tasks", 
 });
+
+
+
+  
 
   return fastify;
 }

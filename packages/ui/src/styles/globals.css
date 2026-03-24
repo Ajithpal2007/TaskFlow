@@ -115,6 +115,113 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
+/* --- TIPTAP NOTION-STYLE EDITOR --- */
+.tiptap-editor {
+  outline: none;
+}
+
+.tiptap-editor p.is-editor-empty:first-child::before {
+  color: hsl(var(--muted-foreground));
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap-editor h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.tiptap-editor ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.tiptap-editor ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.tiptap-editor blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Inline Code */
+.tiptap-editor code {
+  background-color: hsl(var(--muted));
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+  font-size: 0.875em;
+}
+
+/* Code Blocks */
+.tiptap-editor pre {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-family: monospace;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  overflow-x: auto;
+}
+
+
+
+/* --- Notion-Style Inline Code --- */
+.tiptap-editor p code {
+  background-color: #f4f4f5; /* Light grey */
+  color: #eb5757; /* Notion's classic red inline code */
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.875em;
+}
+
+/* --- Notion-Style Code Blocks --- */
+.tiptap-editor pre {
+  background: #f4f4f5;
+  color: #24292e;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+}
+
+.tiptap-editor pre code {
+  background: transparent;
+  color: inherit;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+/* --- Dark Mode Support --- */
+.dark .tiptap-editor p code {
+  background-color: #27272a;
+  color: #f87171;
+}
+
+.dark .tiptap-editor pre {
+  background: #18181b;
+  color: #e4e4e7;
+  border: 1px solid #27272a;
+}
 
 @layer base {
   * {

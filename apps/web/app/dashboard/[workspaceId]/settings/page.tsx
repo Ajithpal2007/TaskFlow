@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "@/app/lib/auth/client";
 import { useState, useEffect } from "react";
 import { useWorkspace, useUpdateWorkspace, useInviteMember } from "@/hooks/api/use-workspace";
 import { Button } from "@repo/ui/components/button";
@@ -10,6 +11,19 @@ import { UserPlus, Settings2, Users } from "lucide-react";
 
 export default function WorkspaceSettingsPage({ params }: { params: { workspaceId: string } }) {
   const { data: workspace, isLoading } = useWorkspace(params.workspaceId);
+
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
+
+  // 🟢 3. Find this user's role in the current workspace
+  const myWorkspaceMemberData = workspace?.members?.find(
+    (m: any) => m.userId === currentUserId
+  );
+  const myRole = myWorkspaceMemberData?.role; // "OWNER", "ADMIN", "MEMBER", "GUEST"
+
+  // 🟢 4. Define who is allowed to invite people
+  const canManageInvites = myRole === "OWNER" || myRole === "ADMIN";
+
   const { mutate: updateWorkspace, isPending: isUpdating } = useUpdateWorkspace();
   const { mutate: inviteMember, isPending: isInviting } = useInviteMember();
 
@@ -44,8 +58,8 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
             </div>
           </CardContent>
           <CardFooter className="border-t bg-muted/20 px-6 py-3">
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               disabled={workspaceName === workspace?.name || isUpdating || !workspaceName}
               onClick={(e) => {
                 e.preventDefault();
@@ -65,8 +79,11 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
           </CardHeader>
           <CardContent className="space-y-6">
 
-            {/* Invite Form */}
-            <div className="flex items-end gap-3 max-w-md">
+            {canManageInvites ? (
+              <div className="flex items-end gap-3 max-w-md">
+                {/* ... Your Invite Email Input & Button go here ... */}
+
+                <div className="flex items-end gap-3 max-w-md">
               <div className="space-y-2 flex-1">
                 <label className="text-sm font-medium">Email Address</label>
                 <Input
@@ -89,6 +106,16 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
                 <UserPlus className="h-4 w-4 mr-2" /> {isInviting ? "Inviting..." : "Invite"}
               </Button>
             </div>
+
+              </div>
+            ) : (
+              <div className="p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground border border-dashed">
+                Only Workspace Admins can invite new members.
+              </div>
+            )}
+
+        
+            
 
             <Separator />
 

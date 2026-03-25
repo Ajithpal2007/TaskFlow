@@ -5,7 +5,9 @@ import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store"; // 1. IMPORT YOUR STORE
-import { Folder, Plus, LayoutDashboard, Inbox, CheckSquare, ChevronsUpDown, Check, Settings2 } from "lucide-react";
+import { Folder, Plus, LayoutDashboard, Inbox, CheckSquare, ChevronsUpDown, Check, Settings2, LogOut } from "lucide-react";
+
+import { useNotifications } from "@/hooks/api/use-notifications";
 
 import {
   Sidebar,
@@ -16,7 +18,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar
+  useSidebar,
+  SidebarFooter
 } from "@repo/ui/components/sidebar";
 
 // 2. IMPORT DROPDOWN COMPONENTS
@@ -28,14 +31,14 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
 
-
+import { Badge } from "@repo/ui/components/badge";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/hooks/api/use-auth";
-import { LogOut } from "lucide-react";
-import { SidebarFooter } from "@repo/ui/components/sidebar";
+import { usePathname, useParams } from "next/navigation";
+
+
 
 
 
@@ -43,6 +46,10 @@ export function SidebarLeft() {
   const { data: workspaces } = useWorkspaces();
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
+
+
+  const { notifications = [] } = useNotifications(); // We'll build this next!
+  const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
   // 3. GET ACTIVE WORKSPACE FROM STORE (Fallback to first if null)
   const activeWorkspace = workspaces?.find((w: any) => w.id === activeWorkspaceId) || workspaces?.[0];
@@ -54,6 +61,9 @@ export function SidebarLeft() {
   const { user, logout } = useAuth();
 
   const pathname = usePathname();
+  const params = useParams();
+
+  const currentWorkspaceId = params.workspaceId as string;
 
   return (
     <Sidebar collapsible="icon">
@@ -137,9 +147,13 @@ export function SidebarLeft() {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton>
-                <CheckSquare className="h-4 w-4 shrink-0" />
-                <span className="group-data-[collapsible=icon]:hidden">My Tasks</span>
+              {/* 🟢 isActive highlights the button if the URL includes '/my-tasks' */}
+              <SidebarMenuButton asChild isActive={pathname.includes("/my-tasks")}>
+                {/* 🟢 THE FIX: Swap activeWorkspaceId for currentWorkspaceId */}
+                <Link href={`/dashboard/${currentWorkspaceId}/my-tasks`}>
+                  <CheckSquare className="h-4 w-4 shrink-0" />
+                  <span className="group-data-[collapsible=icon]:hidden">My Tasks</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             {/* 🟢 1. ADDED THE SETTINGS LINK HERE */}
@@ -149,14 +163,28 @@ export function SidebarLeft() {
                   <Link href={`/dashboard/${activeWorkspace.id}/settings`}>
                     <Settings2 className="h-4 w-4 shrink-0" />
                     <span className="group-data-[collapsible=icon]:hidden">Settings</span>
+
                   </Link>
+
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
             <SidebarMenuItem>
-              <SidebarMenuButton>
-                <Inbox className="h-4 w-4 shrink-0" />
-                <span className="group-data-[collapsible=icon]:hidden">Inbox</span>
+              <SidebarMenuButton asChild isActive={false /* You can dynamically set this based on pathname */}>
+                <Link href={`/dashboard/${currentWorkspaceId}/inbox`}>
+                  <Inbox className="h-4 w-4 shrink-0" />
+                  <span className="group-data-[collapsible=icon]:hidden flex-1">Inbox</span>
+
+                  {/* 🟢 The Unread Badge */}
+                  {unreadCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 py-0 text-[10px] group-data-[collapsible=icon]:hidden"
+                    >
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </Badge>
+                  )}
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

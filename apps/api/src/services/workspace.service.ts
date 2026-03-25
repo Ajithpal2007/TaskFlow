@@ -59,6 +59,7 @@ export const workspaceService = {
           }
         }
       },
+      include: { members: { include: { user: true } } },
       orderBy: {
         createdAt: "desc" // Shows the newest workspaces first
       }

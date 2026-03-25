@@ -51,7 +51,7 @@ export function KanbanColumn({
 
   return (
     <div
-      className={`flex flex-col w-80 shrink-0 rounded-xl p-3 border transition-colors ${isOverLimit
+      className={`flex flex-col w-[280px] shrink-0 rounded-xl p-3 border transition-colors ${isOverLimit
           ? "bg-red-500/5 border-red-500/20" // 🚨 Warning state background
           : "bg-muted/30 border-transparent hover:border-border/50" // Normal state
         }`}
@@ -103,7 +103,7 @@ export function KanbanColumn({
             onClick={() => setIsAdding(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create Issue
+            Create Task 
           </Button>
         )}
       </div>

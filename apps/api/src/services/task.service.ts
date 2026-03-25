@@ -195,6 +195,10 @@ export const taskService = {
           include: { actor: { select: { name: true } } },
           orderBy: { createdAt: "desc" },
         },
+        attachments: true,
+        watchers: {
+          select: { id: true, name: true, image: true }
+        }
       },
     });
   },

@@ -137,6 +137,7 @@ export function useTask(taskId: string | null, onClose?: () => void, selectedTas
   // 4. COMMENT MUTATIONS
   const addCommentMutation = useMutation({
     mutationFn: async (content: string) => {
+      console.log("🚀 1. FRONTEND SENDING:", { content });
       const { data } = await apiClient.post(`/tasks/${taskId}/comments`, { content });
       return data.data;
     },
@@ -156,14 +157,24 @@ export function useTask(taskId: string | null, onClose?: () => void, selectedTas
       });
       return { previousTask, QUERY_KEY };
     },
-    onError: (err, newComment, context) => { if (context?.previousTask) queryClient.setQueryData(context.QUERY_KEY, context.previousTask); },
+    onError: (err, newComment, context) => {
+      console.error("❌ 2. BACKEND REJECTED IT:", err);
+       if (context?.previousTask) queryClient.setQueryData(context.QUERY_KEY, context.previousTask); },
     onSettled: (data, error, variables, context) => { if (context?.QUERY_KEY) queryClient.invalidateQueries({ queryKey: context.QUERY_KEY }); },
   });
 
   // 5. LINK MUTATIONS
   const linkIssueMutation = useMutation({
-    mutationFn: async ({ targetTaskId, linkType }: { targetTaskId: string; linkType: string; targetTaskData: any }) => {
-      await apiClient.post(`/tasks/${taskId}/links`, { targetTaskId, linkType });
+   mutationFn: async ({ targetTaskId, linkType }: { targetTaskId: string; linkType: string; targetTaskData: any }) => {
+      
+      // 🟢 THE SHOTGUN PAYLOAD: Send the string under multiple keys! 
+      // This guarantees your Fastify backend finds it, no matter what req.body expects.
+      await apiClient.post(`/tasks/${taskId}/links`, { 
+        targetTaskId: targetTaskId, 
+        linkType: linkType, 
+        type: linkType,
+        dependencyType: linkType
+      });
     },
     onMutate: async ({ linkType, targetTaskData }) => {
       await queryClient.cancelQueries({ queryKey: ["task", taskId] });
@@ -173,10 +184,20 @@ export function useTask(taskId: string | null, onClose?: () => void, selectedTas
         if (!oldTask) return oldTask;
         const tempId = `temp-${Date.now()}`;
         const newTask = { ...oldTask };
-        if (linkType === "BLOCKS") {
-          newTask.blocking = [...(newTask.blocking || []), { id: tempId, blockedBy: targetTaskData }];
+        
+        // 🟢 FIX 2: Correctly sort IS_BLOCKED_BY vs everything else
+        if (linkType === "IS_BLOCKED_BY") {
+          newTask.blockedBy = [
+            ...(newTask.blockedBy || []), 
+            // 🟢 FIX 3: Inject the `type` property here so the UI doesn't hide it for 4 seconds!
+            { id: tempId, type: linkType, blocking: targetTaskData }
+          ];
         } else {
-          newTask.blockedBy = [...(newTask.blockedBy || []), { id: tempId, blocking: targetTaskData }];
+          newTask.blocking = [
+            ...(newTask.blocking || []), 
+            // 🟢 Inject the `type` property here too!
+            { id: tempId, type: linkType, blockedBy: targetTaskData }
+          ];
         }
         return newTask;
       });

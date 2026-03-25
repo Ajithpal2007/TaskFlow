@@ -5,35 +5,57 @@ import { useRouter } from "next/navigation";
 import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
 import { CreateWorkspaceDialog } from "@/components/workspace/create-workspace-dialog";
+import { Loader2 } from "lucide-react"; // 🟢 Added a professional spinner
 
 export default function DashboardRootPage() {
   const router = useRouter();
+  
+  // 1. Fetch data
+  const { data: workspaces, isLoading, isSuccess } = useWorkspaces();
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
-  const { data: workspaces, isLoading } = useWorkspaces();
 
+  // 2. The Redirect Engine
   useEffect(() => {
-    if (isLoading) return;
-
-    const targetWorkspace = workspaces?.find((w: any) => w.id === activeWorkspaceId) || workspaces?.[0];
-
-    // If they have a workspace, instantly redirect them to the nested route!
-    if (targetWorkspace) {
-      router.push(`/dashboard/${targetWorkspace.id}`);
+    // Only run the redirect logic AFTER the network request successfully finishes
+    if (isSuccess && workspaces) {
+      if (workspaces.length > 0) {
+        // Find their last active workspace, or default to the very first one
+        const targetWorkspace = workspaces.find((w: any) => w.id === activeWorkspaceId) || workspaces[0];
+        
+        // 🟢 Route them into the workspace! (Your workspace layout should handle routing to a specific project)
+        router.push(`/dashboard/${targetWorkspace.id}`);
+      }
     }
-  }, [workspaces, isLoading, activeWorkspaceId, router]);
+  }, [workspaces, isSuccess, activeWorkspaceId, router]);
 
-  if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Checking your account...</div>;
+  // 3. Professional Loading State
+  if (isLoading || isSuccess && workspaces?.length > 0) {
+    // Note: We keep showing the spinner even AFTER success if they have workspaces, 
+    // to prevent the "Welcome" screen from flashing for a split second before the router.push executes!
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-4 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm font-medium animate-pulse">Routing to your workspace...</p>
+      </div>
+    );
   }
 
-  // If they stay on this page, it means they have 0 workspaces. Show Onboarding!
+  // 4. The "Zero Workspaces" Onboarding State
   return (
-    <div className="flex h-screen flex-col items-center justify-center gap-6 p-6 text-center">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Welcome to TaskFlow</h1>
-        <p className="text-muted-foreground">To get started, you'll need to create a workspace for your team.</p>
+    <div className="flex h-screen flex-col items-center justify-center gap-6 p-6 text-center bg-muted/10">
+      <div className="space-y-2 max-w-md">
+        <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-6">
+          <span className="text-2xl font-bold text-primary">TF</span>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight">Welcome to TaskFlow</h1>
+        <p className="text-muted-foreground">
+          To get started, you need to create a secure workspace for your team's projects and tasks.
+        </p>
       </div>
-      <CreateWorkspaceDialog isFirstWorkspace={true} />
+      
+      <div className="mt-4">
+        <CreateWorkspaceDialog isFirstWorkspace={true} />
+      </div>
     </div>
   );
 }

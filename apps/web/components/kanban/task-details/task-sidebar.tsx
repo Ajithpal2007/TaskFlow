@@ -49,6 +49,8 @@ import { Calendar as CalendarComponent } from "@repo/ui/components/calendar";
 
 import { Badge } from "@repo/ui/components/badge";
 import { useTags } from "@/hooks/api/use-tags";
+import { TaskWatchers } from "./task-watchers";
+import { TaskTimeTracking } from "./task-time-tracking";
 
 interface TaskSidebarProps {
   task: any;
@@ -263,6 +265,10 @@ export function TaskSidebar({ task, updateTask,deleteTask, isDeleting }: TaskSid
                 </DropdownMenu>
               </div>
 
+              {/* WATCHERS SECTION */}
+
+              <TaskWatchers task={task} />
+
               {/* STORY POINTS SECTION */}
               <div className="space-y-2">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Estimate</span>
@@ -289,6 +295,8 @@ export function TaskSidebar({ task, updateTask,deleteTask, isDeleting }: TaskSid
                   </SelectContent>
                 </Select>
               </div>
+
+              <TaskTimeTracking task={task} />
 
               {/* EPIC LINKING SECTION */}
               {task.type !== "EPIC" && (
@@ -461,6 +469,7 @@ function AssigneeList({ selectedUserId, onSelect }: { selectedUserId?: string, o
         <CommandGroup>
           {/* Option to Unassign */}
           <CommandItem
+          value="unassigned"
             onSelect={() => onSelect(null)}
             className="cursor-pointer"
           >
@@ -472,6 +481,7 @@ function AssigneeList({ selectedUserId, onSelect }: { selectedUserId?: string, o
           {users?.map((user: any) => (
             <CommandItem
               key={user.id}
+              value={user.name} // 🟢 The fix! Explicitly tell the search engine to use the name
               onSelect={() => onSelect(user.id)}
               className="cursor-pointer"
             >

@@ -52,6 +52,13 @@ enum DependencyType {
   DUPLICATES
 }
 
+enum NotificationType {
+  ASSIGNED
+  MENTIONED
+  COMMENT_ADDED
+  STATUS_CHANGED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String
@@ -68,9 +75,12 @@ model User {
   projects        ProjectMember[]
   createdTasks    Task[]                @relation("CreatedTasks")
   assignedTasks   Task[]                @relation("AssignedTasks")
+  watchedTasks Task[] @relation("TaskWatchers")
   comments        Comment[]
   activityLogs    ActivityLog[]
   sentInvitations WorkspaceInvitation[]
+
+  notifications Notification[]
 
   @@unique([email])
   @@map("user")
@@ -234,10 +244,17 @@ model Task {
   tags         Tag[]         @relation("TaskTags")
   comments     Comment[]
   activityLogs ActivityLog[]
+  notifications Notification[]
+  attachments Attachment[]
 
   // Task Dependencies (e.g., Task A blocks Task B)
   blocking  TaskDependency[] @relation("TaskBlocking")
   blockedBy TaskDependency[] @relation("TaskBlockedBy")
+  watchers  User[] @relation("TaskWatchers")
+
+
+  estimatedHours Float? // The original budget
+  actualHours    Float? // The reality when done
 
   @@unique([projectId, sequenceId]) // Ensures ENG-1, ENG-2 uniqueness
   @@index([projectId, status])
@@ -330,4 +347,37 @@ model WorkspaceInvitation {
   // Constraints
   @@unique([email, workspaceId]) // Prevents spamming the same email for the same workspace
   @@index([token]) // Ultra-fast lookups when they click the magic link
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String           // The user receiving the notification
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  taskId    String?          // The task this relates to (optional)
+  task      Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  
+  
+  type      NotificationType
+  content   String           // e.g., "Ajith assigned you to Task B"
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  name      String   // File name (e.g., "design-v1.png")
+  url       String   // The URL from UploadThing
+  size      String   // Formatted size (e.g., "1.2MB")
+  type      String   // File type (e.g., "image/png")
+  
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
 }

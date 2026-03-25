@@ -2,7 +2,8 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import { createProjectSchema } from "@repo/validators";
 import { projectService } from "../../services/project.service.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { prisma } from "@repo/database";
+import { prisma,ProjectRole } from "@repo/database";
+import { requireProjectRole } from "../../middleware/require-role";
 
 export default async function projectRoutes(fastify: FastifyInstance) {
   const projectRooms = new Map<string, Set<any>>();
@@ -92,7 +93,13 @@ export default async function projectRoutes(fastify: FastifyInstance) {
   // 🟢 PATCH /api/projects/:projectId
   fastify.patch(
     "/:projectId",
-    { preHandler: requireAuth },
+    { 
+      // 🟢 THE FIX: Add the shield array
+      preHandler: [
+        requireAuth,
+        requireProjectRole([ProjectRole.MANAGER]) 
+      ] 
+    },
     async (request, reply) => {
       const { projectId } = request.params as { projectId: string };
       const { name, wipLimits } = request.body as any; // Extract the incoming data

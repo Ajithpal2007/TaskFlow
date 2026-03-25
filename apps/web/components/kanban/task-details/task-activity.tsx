@@ -8,27 +8,85 @@ import { Button } from "@repo/ui/components/button";
 import { Textarea } from "@repo/ui/components/textarea";
 import { Badge } from "@repo/ui/components/badge";
 import { User, Link2, History, MessageSquare, Plus, X } from "lucide-react";
-import { useTaskSearch } from "@/hooks/api/use-task-search";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@repo/ui/components/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui/components/select";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@repo/ui/components/command";
 
+import { useTasks } from "@/hooks/api/use-tasks";
+
+import { TaskAttachments } from "./task-attachments";
+
+import { MentionsInput, Mention } from "react-mentions";
+
 interface TaskActivityProps {
   task: any;
+  workspaceUsers?: any[]; // <--- NEW PROP
   addComment: (content: string, options?: any) => void;
   isAddingComment: boolean;
   linkIssue: (data: { targetTaskId: string, linkType: string, targetTaskData: any }) => void;
   unlinkIssue: (targetTaskId: string) => void;
 }
 
-export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unlinkIssue }: TaskActivityProps) {
+const mentionsStyles = {
+  control: { fontSize: 14, fontWeight: "normal" },
+  input: {
+    padding: "8px 12px",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: "calc(var(--radius) - 2px)",
+    backgroundColor: "transparent",
+    outline: "none",
+    minHeight: "80px",
+  },
+  suggestions: {
+    list: {
+      backgroundColor: "hsl(var(--popover))",
+      border: "1px solid hsl(var(--border))",
+      borderRadius: "var(--radius)",
+      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+      fontSize: 14,
+      zIndex: 100,
+    },
+    item: {
+      padding: "8px 12px",
+      borderBottom: "1px solid hsl(var(--border)/0.5)",
+      color: "hsl(var(--foreground))",
+      "&focused": { backgroundColor: "hsl(var(--muted))" },
+    },
+  },
+};
+
+const renderCommentText = (text: string) => {
+  if (!text) return null;
+  const mentionRegex = /@\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = mentionRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    parts.push(
+      <span key={match.index} className="text-primary font-medium bg-primary/10 px-1 py-0.5 rounded cursor-pointer hover:underline">
+        @{match[1]}
+      </span>
+    );
+    lastIndex = mentionRegex.lastIndex;
+  }
+  if (lastIndex < text.length) parts.push(text.substring(lastIndex));
+
+  return parts.length > 0 ? parts : text;
+};
+export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingComment, linkIssue, unlinkIssue }: TaskActivityProps) {
+  
   const { data: activityLogs = [], isLoading: isLoadingActivity } = useTaskActivity(task?.id);
   const [newComment, setNewComment] = useState("");
 
   const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);
   const [linkSearchQuery, setLinkSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState(""); // 🟢 State for debouncing
-  const [linkType, setLinkType] = useState<"BLOCKS" | "IS_BLOCKED_BY">("BLOCKS");
+  const [linkType, setLinkType] = useState<"BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO" | "DUPLICATES">("BLOCKS");
 
   // 🟢 1. THE DEBOUNCE EFFECT: Waits 300ms after typing stops before searching
   useEffect(() => {
@@ -37,35 +95,34 @@ export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unl
   }, [linkSearchQuery]);
 
   // Use the debounced query for the API hook!
-  const { data: searchResults = [] } = useTaskSearch(task?.projectId, debouncedQuery);
+  const { tasks: searchResults = [] } = useTasks(task?.projectId);
 
   if (!task) return null;
 
+  const mentionData = workspaceUsers.map(member => ({
+    // Use the actual User ID, not the Membership ID
+    id: member.user?.id || member.userId,
+    // Look inside the nested user object for the name!
+    display: member.user?.name || member.user?.email || "Unknown User"
+  }));
   const handlePostComment = () => {
     if (!newComment.trim()) return;
-
-    // 1. Save the text to a temporary variable
     const textToSubmit = newComment.trim();
-
-    // 🟢 2. INSTANT FEEDBACK: Clear the box immediately! Do not wait for the server.
     setNewComment("");
-
-    // 3. Fire the mutation
     addComment(textToSubmit);
   };
 
-  // 🟢 2. KEYBOARD SHORTCUT: Cmd+Enter to submit
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: any) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handlePostComment();
     }
   };
 
+
+
   return (
     <div className="flex flex-col gap-10">
-
-      {/* --- LINKED ISSUES SECTION --- */}
       <div className="space-y-4 pt-6 border-t">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 font-semibold text-lg text-foreground">
@@ -79,37 +136,46 @@ export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unl
                 <Plus className="h-3.5 w-3.5 mr-1" /> Add Link
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[320px] p-0 z-[105]" align="end">
+
+            {/* 🟢 2. avoidCollisions={false} permanently stops the popover from jumping to the top! */}
+            <PopoverContent className="w-[320px] p-0 z-50" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
               <div className="p-2 border-b bg-muted/30">
                 <Select value={linkType} onValueChange={(v: any) => setLinkType(v)}>
                   <SelectTrigger className="h-8 text-xs bg-background">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="!z-[10000]">
+                  <SelectContent className="z-50">
                     <SelectItem value="BLOCKS">Blocks...</SelectItem>
                     <SelectItem value="IS_BLOCKED_BY">Is Blocked By...</SelectItem>
+                    <SelectItem value="RELATES_TO">Relates To...</SelectItem>
+                    <SelectItem value="DUPLICATES">Duplicates...</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <Command shouldFilter={false} className="bg-transparent">
+              {/* 🟢 3. shouldFilter is omitted so it defaults to true (Instant local filtering) */}
+              <Command className="bg-transparent">
                 <CommandInput
                   placeholder="Search tasks by ID or title..."
                   value={linkSearchQuery}
                   onValueChange={setLinkSearchQuery}
                   className="h-9 text-xs"
                 />
-                <CommandList>
+
+                {/* 🟢 4. FIXED HEIGHT: 'h-56' stops the modal from resizing as results filter */}
+                <CommandList className="h-56 overflow-y-auto overflow-x-hidden">
                   <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
-                    {linkSearchQuery ? "No tasks found." : "Type to search..."}
+                    No tasks found.
                   </CommandEmpty>
+
                   <CommandGroup>
                     {searchResults
                       .filter((t: any) => t.id !== task.id)
                       .map((t: any) => (
                         <CommandItem
                           key={t.id}
-                          value={t.id} // Added value prop for standard command behavior
+                          // 🟢 5. cmdk searches this exact string instantly
+                          value={`${t.project?.identifier}-${t.sequenceId} ${t.title}`}
                           onSelect={() => {
                             linkIssue({ targetTaskId: t.id, linkType, targetTaskData: t });
                             setIsLinkPopoverOpen(false);
@@ -131,12 +197,13 @@ export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unl
             </PopoverContent>
           </Popover>
         </div>
-
         <div className="ml-7 space-y-4">
-          {task.blocking?.length > 0 && (
+
+          {/* --- 🔴 BLOCKS --- */}
+          {task.blocking?.filter((d: any) => d.type === "BLOCKS").length > 0 && (
             <div className="space-y-2">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Blocks</span>
-              {task.blocking.map((dep: any) => (
+              {task.blocking.filter((d: any) => d.type === "BLOCKS").map((dep: any) => (
                 <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer">
                   <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-600 border-red-500/20">
                     {dep.blockedBy.project?.identifier}-{dep.blockedBy.sequenceId}
@@ -144,15 +211,8 @@ export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unl
                   <span className={`text-sm flex-1 truncate ${dep.blockedBy?.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
                     {dep.blockedBy.title}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100" // 🟢 Made 'X' appear on hover for cleaner UI
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      unlinkIssue(dep.blockedBy.id);
-                    }}
-                  >
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
+                    onClick={(e) => { e.stopPropagation(); unlinkIssue(dep.blockedBy.id); }}>
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -160,10 +220,11 @@ export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unl
             </div>
           )}
 
-          {task.blockedBy?.length > 0 && (
+          {/* --- 🟡 IS BLOCKED BY --- */}
+          {task.blockedBy?.filter((d: any) => d.type === "BLOCKS").length > 0 && (
             <div className="space-y-2">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Is Blocked By</span>
-              {task.blockedBy.map((dep: any) => (
+              {task.blockedBy.filter((d: any) => d.type === "BLOCKS").map((dep: any) => (
                 <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer">
                   <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
                     {dep.blocking.project?.identifier}-{dep.blocking.sequenceId}
@@ -171,23 +232,60 @@ export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unl
                   <span className={`text-sm flex-1 truncate ${dep.blocking?.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
                     {dep.blocking.title}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors opacity-0 group-hover:opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      unlinkIssue(dep.blocking.id);
-                    }}
-                  >
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
+                    onClick={(e) => { e.stopPropagation(); unlinkIssue(dep.blocking.id); }}>
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               ))}
             </div>
           )}
+
+          {/* --- 🔵 RELATES TO --- */}
+          {task.blocking?.filter((d: any) => d.type === "RELATES_TO").length > 0 && (
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Relates To</span>
+              {task.blocking.filter((d: any) => d.type === "RELATES_TO").map((dep: any) => (
+                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer">
+                  <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/20">
+                    {dep.blockedBy.project?.identifier}-{dep.blockedBy.sequenceId}
+                  </Badge>
+                  <span className={`text-sm flex-1 truncate ${dep.blockedBy?.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
+                    {dep.blockedBy.title}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
+                    onClick={(e) => { e.stopPropagation(); unlinkIssue(dep.blockedBy.id); }}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* --- 🟣 DUPLICATES --- */}
+          {task.blocking?.filter((d: any) => d.type === "DUPLICATES").length > 0 && (
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Duplicates</span>
+              {task.blocking.filter((d: any) => d.type === "DUPLICATES").map((dep: any) => (
+                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer">
+                  <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-600 border-purple-500/20">
+                    {dep.blockedBy.project?.identifier}-{dep.blockedBy.sequenceId}
+                  </Badge>
+                  <span className={`text-sm flex-1 truncate ${dep.blockedBy?.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
+                    {dep.blockedBy.title}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
+                    onClick={(e) => { e.stopPropagation(); unlinkIssue(dep.blockedBy.id); }}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
       </div>
+      <TaskAttachments task={task} />
 
       {/* --- COMMENTS SECTION --- */}
       <div className="space-y-6 pt-6 border-t">
@@ -201,17 +299,32 @@ export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unl
             <User className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 space-y-2">
-            <Textarea
-              placeholder="Write a comment... (Cmd+Enter to save)" // 🟢 Updated placeholder
+            <MentionsInput
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              onKeyDown={handleKeyDown} // 🟢 Added Keyboard shortcut
-              className="min-h-[80px] resize-none text-sm"
-            />
-            <div className="flex justify-end">
+              onKeyDown={handleKeyDown}
+              style={mentionsStyles}
+              placeholder="Write a comment... Type @ to mention someone. (Cmd+Enter to save)"
+            >
+              <Mention
+                trigger="@"
+                data={mentionData}
+                displayTransform={(id, display) => `@${display}`}
+                style={{ backgroundColor: "hsl(var(--primary)/10)", color: "hsl(var(--primary))", borderRadius: "2px" }}
+              />
+            </MentionsInput>
+            
+            {/* 🟢 THE FIX: relative and z-50 forces the button above the invisible text layer! */}
+            <div className="flex justify-end relative z-50 pt-2">
               <Button
                 size="sm"
-                onClick={handlePostComment}
+                type="button" // 🟢 Prevents default form submission behaviors
+                className="cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  console.log("🖱️ FRONTEND: Save Button Clicked!"); // 🟢 Let's prove the click registers!
+                  handlePostComment();
+                }}
                 disabled={!newComment.trim() || isAddingComment}
               >
                 {isAddingComment ? "Posting..." : "Save"}
@@ -242,7 +355,7 @@ export function TaskActivity({ task, addComment, isAddingComment, linkIssue, unl
                   </div>
                   <div className="text-sm text-foreground bg-muted/30 p-3 rounded-lg border border-transparent group-hover:border-border transition-colors whitespace-pre-wrap">
                     {/* 🟢 Added whitespace-pre-wrap so line breaks in comments render correctly */}
-                    {comment.content || "..."}
+                    {renderCommentText(comment.content)}
                   </div>
                 </div>
               </div>

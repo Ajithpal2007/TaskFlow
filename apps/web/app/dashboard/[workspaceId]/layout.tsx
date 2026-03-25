@@ -13,6 +13,7 @@ import { Search } from "lucide-react";
 
 import { useAuth } from "@/hooks/api/use-auth";
 import { useRouter } from "next/navigation";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 export default function WorkspaceLayout({
   children,
@@ -61,27 +62,34 @@ export default function WorkspaceLayout({
 
       <SidebarInset className="min-w-0 bg-background">
         {/* HEADER - Locks to the top */}
+        {/* HEADER - Locks to the top */}
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="h-4 w-px bg-border mx-2" />
           
-          {/* 🟢 Display the REAL workspace name */}
+          {/* 🟢 LEFT SIDE: Breadcrumbs */}
           <div className="font-semibold text-sm text-muted-foreground">
             {activeWorkspace ? activeWorkspace.name : "Loading Workspace..."} / Project Management
           </div>
 
-          <button
-            onClick={() => useUIStore.getState().setSearchOpen(true)}
-            className="ml-auto flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 hover:bg-muted px-3 py-1.5 rounded-md border transition-colors"
-          >
-            <Search className="h-4 w-4" />
-            <span>Search...</span>
-            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium opacity-100">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </button>
-        </header>
+          {/* 🟢 RIGHT SIDE: Search & Notifications */}
+          {/* We moved ml-auto to this wrapper so everything inside gets pushed right! */}
+          <div className="ml-auto flex items-center gap-3">
+            <button
+              onClick={() => useUIStore.getState().setSearchOpen(true)}
+              className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 hover:bg-muted px-3 py-1.5 rounded-md border transition-colors"
+            >
+              <Search className="h-4 w-4" />
+              <span>Search...</span>
+              <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium opacity-100">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </button>
 
+            {/* THE NOTIFICATION BELL */}
+            <NotificationBell workspaceId={params.workspaceId} />
+          </div>
+        </header>
         {/* PAGE CONTENT (Either the Workspace Home or the Kanban Board) */}
         {children}
 

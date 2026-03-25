@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export const createTaskSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   
 
   status: z.enum(["BACKLOG", "TODO", "IN_PROGRESS", "IN_REVIEW", "DONE", "CANCELED"]).optional(),
@@ -25,6 +25,7 @@ export const createTaskSchema = z.object({
 
 export const updateTaskSchema = createTaskSchema.partial().extend({
   sequenceId: z.number().optional(),
+  description: z.string().optional().nullable(),
 })
 
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;

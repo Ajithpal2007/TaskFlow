@@ -5,9 +5,10 @@ import { authRoutes } from "./routes/users/index.js";
 
 import websocket from "@fastify/websocket";
 
-export async function buildServer() {
-  
+import { createRouteHandler } from "uploadthing/fastify";
+import { ourFileRouter } from "./lib/uploadthing";
 
+export async function buildServer() {
   const fastify = Fastify({
     logger:
       process.env.NODE_ENV !== "production"
@@ -21,7 +22,7 @@ export async function buildServer() {
   fastify.get("/ws-test", { websocket: true }, (connection, request) => {
     console.log("🟢 GLOBAL WS TEST HIT!");
     connection.send("Hello from the Global Bypass Route!");
-    
+
     connection.on("message", (msg) => {
       console.log("Global received:", msg.toString());
     });
@@ -32,10 +33,20 @@ export async function buildServer() {
     credentials: true, // Crucial for sharing sessions between ports
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [
+      "Origin",
+      "Accept",
       "Content-Type",
       "Authorization",
       "Cookie",
       "x-requested-with",
+      "x-uploadthing-package",
+      "x-uploadthing-version",
+      "traceparent",
+      "tracestate",
+      "b3",
+      "x-b3-traceid",
+      "x-b3-spanid",
+      "x-b3-sampled",
     ],
   });
 
@@ -51,6 +62,10 @@ export async function buildServer() {
   // Routes will be registered here as you build them
   await fastify.register(authRoutes);
 
+  fastify.register(createRouteHandler, {
+    router: ourFileRouter,
+  });
+
   await fastify.register(import("./routes/workspaces/index.js"), {
     prefix: "/api/workspaces",
   });
@@ -59,12 +74,15 @@ export async function buildServer() {
   });
 
   await fastify.register(import("./routes/task/index.js"), {
-  prefix: "/api/tasks", 
-});
+    prefix: "/api/tasks",
+  });
 
+  await fastify.register(import("./routes/notification/index.js"), {
+    prefix: "/api/notifications",
+  });
 
-
-  
+ 
 
   return fastify;
 }
+

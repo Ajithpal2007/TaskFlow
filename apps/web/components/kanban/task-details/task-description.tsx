@@ -6,7 +6,8 @@ import { RichTextEditor } from "@/components/kanban/rich-text-editor";
 
 interface TaskDescriptionProps {
   task: any;
-  updateTask: (data: { description: string }) => void;
+  // 🟢 1. Update the type to match your React Query mutation exactly
+  updateTask: (payload: { taskId: string; updates: any }) => void;
 }
 
 export function TaskDescription({ task, updateTask }: TaskDescriptionProps) {
@@ -18,12 +19,19 @@ export function TaskDescription({ task, updateTask }: TaskDescriptionProps) {
   }, [task?.description]);
 
   const handleSave = () => {
+    // Only save if the text actually changed
     if (description !== (task?.description || "")) {
-      updateTask({ description });
+      
+      // 🟢 2. THE FIX: Wrap the payload correctly!
+      // We must pass the taskId, and put the description inside the 'updates' object
+      updateTask({ 
+        taskId: task.id, 
+        updates: { description } 
+      });
+      
     }
   };
 
-  // 🟢 Helper to check if Tiptap is actually empty (it sometimes leaves empty <p> tags)
   const isEmpty = !description || description === "<p></p>" || description === "";
 
   return (
@@ -34,7 +42,6 @@ export function TaskDescription({ task, updateTask }: TaskDescriptionProps) {
       </div>
       
       <div className="ml-7">
-        {/* 🟢 THE EMPTY STATE PLACEHOLDER */}
         {!isEditing && isEmpty && (
           <div
             onClick={() => setIsEditing(true)}
@@ -44,7 +51,6 @@ export function TaskDescription({ task, updateTask }: TaskDescriptionProps) {
           </div>
         )}
 
-        {/* 🟢 HIDE THE EDITOR WHEN EMPTY & NOT EDITING */}
         <div className={!isEditing && isEmpty ? "hidden" : "block"}>
           <RichTextEditor 
             value={description} 

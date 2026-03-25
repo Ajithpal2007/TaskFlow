@@ -6,7 +6,7 @@ import { useUIStore } from "@/app/lib/stores/use-ui-store";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
 import { useSearch } from "@/hooks/api/use-search";
 import { Folder, CheckSquare } from "lucide-react";
-import { Dialog, DialogContent } from "@repo/ui/components/dialog"; 
+import { Dialog, DialogContent } from "@repo/ui/components/dialog";
 import {
   Command,
   CommandEmpty,
@@ -14,13 +14,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@repo/ui/components/command"; 
+} from "@repo/ui/components/command";
 
 export function GlobalSearch() {
   const router = useRouter();
   const { isSearchOpen, setSearchOpen } = useUIStore();
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
-  
+
   const [inputValue, setInputValue] = useState("");
   const [debouncedValue, setDebouncedValue] = useState(""); // 🟢 New state for debouncing
 
@@ -35,16 +35,25 @@ export function GlobalSearch() {
   // 🟢 2. Pass the debounced value to the API hook so we don't spam the server!
   const { data: results, isFetching } = useSearch(activeWorkspaceId, debouncedValue);
 
+  // 🟢 THE BULLETPROOF LISTENER
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+      // Check for both lowercase and uppercase 'K' (in case Caps Lock is on)
+      if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setSearchOpen(!isSearchOpen);
+
+        // Use Zustand's getState() to bypass React closures! 
+        // This guarantees we always have the freshest state without needing dependencies.
+        const currentState = useUIStore.getState().isSearchOpen;
+        setSearchOpen(!currentState);
       }
     };
+
     document.addEventListener("keydown", down);
+
+    // Clean up ONLY when the component completely unmounts
     return () => document.removeEventListener("keydown", down);
-  }, [isSearchOpen, setSearchOpen]);
+  }, []); // 🟢 Empty dependency array!
 
   // Clear input when modal closes
   useEffect(() => {
@@ -66,18 +75,18 @@ export function GlobalSearch() {
     <Dialog open={isSearchOpen} onOpenChange={setSearchOpen}>
       <DialogContent className="overflow-hidden p-0 shadow-lg">
         <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder="Type a command or search..." 
+          <CommandInput
+            placeholder="Type a command or search..."
             value={inputValue}
             onValueChange={setInputValue}
           />
           <CommandList>
             {/* 🟢 3. FIX THE EMPTY STATE FLASH */}
             <CommandEmpty>
-              {inputValue.length < 2 
-                ? "Type at least 2 characters to search..." 
-                : isFetching 
-                  ? "Searching database..." 
+              {inputValue.length < 2
+                ? "Type at least 2 characters to search..."
+                : isFetching
+                  ? "Searching database..."
                   : "No results found."}
             </CommandEmpty>
 

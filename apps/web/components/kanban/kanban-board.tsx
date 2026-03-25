@@ -14,30 +14,35 @@ import {
   closestCorners
 } from "@dnd-kit/core";
 
-// 🟢 New UI Imports for the Filter Bar
+import { useSession } from "@/app/lib/auth/client";
+
+// UI Imports for the Filter Bar
 import { Input } from "@repo/ui/components/input";
 import { Button } from "@repo/ui/components/button";
-import { Search, X, SlidersHorizontal, AlertTriangle } from "lucide-react";
+import { Search, X, User } from "lucide-react"; 
+// 🟢 1. IMPORT THE SKELETON COMPONENT
+import { Skeleton } from "@repo/ui/components/skeleton";
 
 const COLUMNS: { label: string; status: TaskStatus; wipLimit?: number }[] = [
   { label: "Backlog", status: "BACKLOG" },
   { label: "Todo", status: "TODO", wipLimit: 5 },
-  { label: "In Progress", status: "IN_PROGRESS", wipLimit: 3 }, // Agile standard: strict limit here
+  { label: "In Progress", status: "IN_PROGRESS", wipLimit: 3 },
   { label: "Done", status: "DONE" },
 ];
+
 export function KanbanBoard({ projectId, workspaceId }: { projectId: string; workspaceId: string }) {
   const { tasks, isLoading, updateTask, error } = useTasks(projectId);
-
   const { broadcastUpdate } = useBoardSocket(projectId);
 
-  // 🟢 1. The Filter State
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
-
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
@@ -48,19 +53,11 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
 
     const task = tasks?.find((t: any) => t.id === taskId);
     if (task && task.status !== newStatus) {
-
-      // 🟢 1. INSTANT BROADCAST: Tell the room immediately!
-      broadcastUpdate({
-        type: "TASK_MOVED",
-        payload: { taskId, newStatus }
-      });
-
-      // 🟢 2. BACKGROUND SAVE: Let the database update silently in the background
+      broadcastUpdate({ type: "TASK_MOVED", payload: { taskId, newStatus } });
       updateTask({ taskId, updates: { status: newStatus } });
     }
   };
 
-  // 🟢 2. Extract unique assignees dynamically from the existing tasks
   const uniqueAssignees = useMemo(() => {
     if (!tasks) return [];
     const map = new Map();
@@ -72,11 +69,10 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
     return Array.from(map.values());
   }, [tasks]);
 
-  // 🟢 3. The High-Speed Client-Side Filter Engine
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     return tasks.filter((task: any) => {
-      // Check Search (Matches Title or Sequence ID like "TASK-12")
+      // Check Search
       const matchesSearch = searchQuery === "" ||
         task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.sequenceId?.toString().includes(searchQuery);
@@ -88,13 +84,42 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
     });
   }, [tasks, searchQuery, assigneeFilter]);
 
-  if (isLoading) return <div className="p-10 text-muted-foreground">Loading board...</div>;
   if (error) return <div className="p-10 text-red-500">❌ Error loading tasks.</div>;
 
+  // 🟢 2. THE SKELETON LOADING STATE
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full w-full">
+        {/* Fake Filter Bar */}
+        <div className="flex items-center gap-4 pb-4 mb-2 border-b border-border/40 shrink-0">
+          <Skeleton className="h-9 w-72 rounded-md" />
+          <Skeleton className="h-9 w-32 rounded-md" />
+          <Skeleton className="h-7 w-24 rounded-full" />
+        </div>
+
+        {/* Fake Kanban Columns */}
+        <div className="flex flex-1 gap-4 overflow-x-auto pb-4 pt-2">
+          {[1, 2, 3, 4].map((col) => (
+            <div key={col} className="w-[280px] shrink-0 flex flex-col gap-3">
+              <div className="flex items-center justify-between mb-2">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-5 w-8 rounded-full" />
+              </div>
+              <Skeleton className="h-[120px] w-full rounded-lg" />
+              <Skeleton className="h-[100px] w-full rounded-lg" />
+              {col % 2 === 0 && <Skeleton className="h-[140px] w-full rounded-lg" />}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 🟢 3. THE REAL RENDER (Unchanged)
   return (
     <div className="flex flex-col h-full w-full">
 
-      {/* --- 🟢 THE FILTER BAR --- */}
+      {/* --- THE FILTER BAR --- */}
       <div className="flex flex-wrap items-center gap-4 pb-4 mb-2 border-b border-border/40 shrink-0">
 
         {/* Search Input */}
@@ -108,6 +133,19 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
           />
         </div>
 
+        {/* "Only My Issues" Button */}
+        {currentUserId && (
+          <Button
+            variant={assigneeFilter === currentUserId ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setAssigneeFilter(prev => prev === currentUserId ? null : currentUserId)}
+            className="h-9 px-3 border border-dashed border-border/50 text-sm font-medium"
+          >
+            <User className="h-4 w-4 mr-2" />
+            Only My Issues
+          </Button>
+        )}
+
         {/* Assignee Avatars */}
         {uniqueAssignees.length > 0 && (
           <div className="flex items-center gap-1.5 border-l pl-4 border-border/50">
@@ -119,8 +157,9 @@ export function KanbanBoard({ projectId, workspaceId }: { projectId: string; wor
                   key={user.id}
                   onClick={() => setAssigneeFilter(isActive ? null : user.id)}
                   title={`Filter by ${user.name}`}
-                  className={`relative h-7 w-7 rounded-full border-2 overflow-hidden transition-all ${isActive ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-primary/50 opacity-70 hover:opacity-100"
-                    }`}
+                  className={`relative h-7 w-7 rounded-full border-2 overflow-hidden transition-all ${
+                    isActive ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-primary/50 opacity-70 hover:opacity-100"
+                  }`}
                 >
                   {user.image ? (
                     <Image src={user.image} alt={user.name} fill className="object-cover" />

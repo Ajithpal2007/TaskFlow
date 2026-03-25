@@ -1,15 +1,12 @@
 import { createAuthClient } from "better-auth/react";
 
-
-
-export const authClient =  createAuthClient({
-
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000",
-   withCredentials: true,
-   fetchOptions: {
-        credentials: "include" // This allows cookies to pass between 3000 and 4000
-    }
-   
+export const authClient = createAuthClient({
+  // 🟢 THE FIX: Better Auth needs to point strictly to /api/auth
+  baseURL: `${process.env.NEXT_PUBLIC_API_URL}/api/auth`,
+  
+  fetchOptions: {
+    credentials: "include" // This allows cookies to pass between 3000 and 4000
+  }
 });
 
 export const { useSession, signIn, signUp, signOut } = authClient;

@@ -29,15 +29,21 @@ export function RichTextEditor({ value, onChange, onBlur, isEditing, setIsEditin
     ],
     content: value,
     editable: isEditing, // Completely locks the editor when not editing
+   
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      // 🟢 1. Get the HTML
+      const html = editor.getHTML();
+      
+      // 🟢 2. Send it back to the parent component!
+      onChange(html); 
+      
+      // ❌ REMOVE THIS LINE: form.setValue("description", html);
     },
     editorProps: {
       attributes: {
         class: "tiptap-editor min-h-[100px]",
       },
     },
-    
   });
 
   // Toggle Tiptap's internal editable state when your UI state changes

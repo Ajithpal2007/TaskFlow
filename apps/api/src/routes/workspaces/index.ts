@@ -5,10 +5,12 @@ import { requireAuth } from "../../middleware/require-auth.js";
 import { tagService } from "../../services/tag.service.js";
 
 import { analyticsService } from "../../services/analytics.service";
-import { prisma } from "@repo/database";
+import { prisma, WorkspaceRole } from "@repo/database";
 
 import { sendInviteEmail } from "../../services/email.service.js";
 import crypto from "crypto";
+
+import { requireWorkspaceRole } from "../../middleware/require-role";
 
 export default async function workspaceRoutes(fastify: FastifyInstance) {
   // POST /api/workspaces
@@ -106,7 +108,10 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/:workspaceId/members",
     {
-      preHandler: requireAuth,
+      preHandler: [
+        requireAuth,
+        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]),
+      ],
     },
     async (request, reply) => {
       const { workspaceId } = request.params as { workspaceId: string };
@@ -228,8 +233,6 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
     "/:slug/invites",
     { preHandler: [requireAuth] },
     async (request, reply) => {
-      console.log("🔥 INVITE ROUTE HIT! Params:", request.params);
-
       const { slug } = request.params as { slug: string };
       const { email, role } = request.body as { email: string; role?: string };
       const workspaceId = slug;
@@ -242,13 +245,18 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
           where: {
             workspaceId: workspaceId,
             userId: inviterId,
-          }
+          },
         });
 
-        if (!inviterMembership || (inviterMembership.role !== "OWNER" && inviterMembership.role !== "ADMIN")) {
-          return reply.status(403).send({ 
-            success: false, 
-            message: "Forbidden: You do not have permission to invite members to this workspace." 
+        if (
+          !inviterMembership ||
+          (inviterMembership.role !== "OWNER" &&
+            inviterMembership.role !== "ADMIN")
+        ) {
+          return reply.status(403).send({
+            success: false,
+            message:
+              "Forbidden: You do not have permission to invite members to this workspace.",
           });
         }
         const token = crypto.randomBytes(32).toString("hex");
@@ -319,12 +327,10 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
 
         // 2. Security Check: Does it exist? Is it expired?
         if (!invite) {
-          return reply
-            .status(404)
-            .send({
-              success: false,
-              message: "Invalid or expired invitation.",
-            });
+          return reply.status(404).send({
+            success: false,
+            message: "Invalid or expired invitation.",
+          });
         }
 
         if (invite.expiresAt < new Date()) {
@@ -395,6 +401,94 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
           .send({ success: false, message: "Internal Server Error" });
       }
     },
+  );
+
+  // 🟢 CHANGE A USER'S ROLE
+  fastify.patch(
+    "/:workspaceId/members/:memberId",
+    {
+      preHandler: [
+        requireAuth, 
+        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]) 
+      ],
+    },
+    async (request, reply) => {
+      const { memberId } = request.params as { memberId: string };
+      const { role } = request.body as { role: WorkspaceRole };
+
+      // Make sure they aren't trying to downgrade the OWNER
+      const targetMember = await prisma.workspaceMember.findUnique({ where: { id: memberId } });
+      if (targetMember?.role === WorkspaceRole.OWNER) {
+        return reply.status(403).send({ error: "Cannot change the role of the Workspace Owner." });
+      }
+
+      const updatedMember = await prisma.workspaceMember.update({
+        where: { id: memberId },
+        data: { role },
+      });
+
+      return reply.send({ data: updatedMember });
+    }
+  );
+
+  // 🟢 REMOVE A USER FROM WORKSPACE
+  fastify.delete(
+    "/:workspaceId/members/:memberId",
+    {
+      preHandler: [
+        requireAuth, 
+        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]) 
+      ],
+    },
+    async (request, reply) => {
+      const { memberId } = request.params as { memberId: string };
+
+      // Prevent kicking the owner
+      const targetMember = await prisma.workspaceMember.findUnique({ where: { id: memberId } });
+      if (targetMember?.role === WorkspaceRole.OWNER) {
+        return reply.status(403).send({ error: "Cannot remove the Workspace Owner." });
+      }
+
+      await prisma.workspaceMember.delete({
+        where: { id: memberId },
+      });
+
+      return reply.send({ success: true });
+    }
+  );
+
+  // 🟢 GET ALL USERS IN A WORKSPACE
+  fastify.get(
+    "/:workspaceId/users",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
+
+      try {
+        // 1. Find all memberships for this workspace and include the user details
+        const members = await prisma.workspaceMember.findMany({
+          where: { workspaceId },
+          include: { 
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              }
+            } 
+          },
+        });
+
+        // 2. The frontend wants an array of pure 'User' objects, not 'Memberships'.
+        // So we map over the members and extract just the nested user object.
+        const users = members.map((member) => member.user);
+
+        return reply.send({ data: users });
+      } catch (error) {
+        return reply.status(500).send({ message: "Failed to fetch workspace users", error });
+      }
+    }
   );
 }
 

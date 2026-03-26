@@ -14,6 +14,7 @@ import { Search } from "lucide-react";
 import { useAuth } from "@/hooks/api/use-auth";
 import { useRouter } from "next/navigation";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function WorkspaceLayout({
   children,
@@ -71,6 +72,8 @@ export default function WorkspaceLayout({
           <div className="font-semibold text-sm text-muted-foreground">
             {activeWorkspace ? activeWorkspace.name : "Loading Workspace..."} / Project Management
           </div>
+
+          <ThemeToggle />
 
           {/* 🟢 RIGHT SIDE: Search & Notifications */}
           {/* We moved ml-auto to this wrapper so everything inside gets pushed right! */}

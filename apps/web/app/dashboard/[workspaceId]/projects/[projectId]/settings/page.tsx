@@ -48,6 +48,8 @@ export default function ProjectSettingsPage({ params }: { params: { workspaceId:
   const [name, setName] = useState("");
   const [todoLimit, setTodoLimit] = useState<number | "">("");
   const [inProgressLimit, setInProgressLimit] = useState<number | "">("");
+  const [inReviewLimit, setInReviewLimit] = useState<number | "">("");
+ 
 
   useEffect(() => {
     if (activeProject) {
@@ -55,6 +57,7 @@ export default function ProjectSettingsPage({ params }: { params: { workspaceId:
       const limits = activeProject.wipLimits || {};
       setTodoLimit(limits.TODO || "");
       setInProgressLimit(limits.IN_PROGRESS || "");
+      setInReviewLimit(limits.IN_REVIEW || "");
     }
   }, [activeProject]);
 
@@ -66,6 +69,7 @@ export default function ProjectSettingsPage({ params }: { params: { workspaceId:
         wipLimits: {
           TODO: todoLimit ? Number(todoLimit) : null,
           IN_PROGRESS: inProgressLimit ? Number(inProgressLimit) : null,
+          IN_REVIEW: inReviewLimit ? Number(inReviewLimit) : null,
         }
       }
     });
@@ -137,6 +141,15 @@ export default function ProjectSettingsPage({ params }: { params: { workspaceId:
                   <Input 
                     type="number" min="0" value={inProgressLimit} 
                     onChange={(e) => setInProgressLimit(Number(e.target.value) || "")} 
+                    placeholder="No limit" 
+                    disabled={!canManageProject} // 🟢 Locked!
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">In Review Limit</label>
+                  <Input 
+                    type="number" min="0" value={inReviewLimit} 
+                    onChange={(e) => setInReviewLimit(Number(e.target.value) || "")} 
                     placeholder="No limit" 
                     disabled={!canManageProject} // 🟢 Locked!
                   />

@@ -27,6 +27,7 @@ const COLUMNS: { label: string; status: TaskStatus; wipLimit?: number }[] = [
   { label: "Backlog", status: "BACKLOG" },
   { label: "Todo", status: "TODO", wipLimit: 5 },
   { label: "In Progress", status: "IN_PROGRESS", wipLimit: 3 },
+  { label: "In Review", status: "IN_REVIEW", wipLimit: 2 },
   { label: "Done", status: "DONE" },
 ];
 

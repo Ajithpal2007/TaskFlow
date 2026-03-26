@@ -80,7 +80,15 @@ const renderCommentText = (text: string) => {
 };
 export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingComment, linkIssue, unlinkIssue }: TaskActivityProps) {
   
-  const { data: activityLogs = [], isLoading: isLoadingActivity } = useTaskActivity(task?.id);
+  const { data: activityLogs = [], isLoading: isLoadingActivity,refetch: refetchActivity } = useTaskActivity(task?.id);
+
+  // 🟢 THE FIX: Refetch activity logs whenever the task's status or priority changes!
+  useEffect(() => {
+    if (task?.id) {
+      refetchActivity();
+    }
+  }, [task?.status, task?.priority, task?.assigneeId, refetchActivity, task?.id]);
+
   const [newComment, setNewComment] = useState("");
 
   const [isLinkPopoverOpen, setIsLinkPopoverOpen] = useState(false);

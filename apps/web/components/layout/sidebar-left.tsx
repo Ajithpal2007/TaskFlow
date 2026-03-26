@@ -5,7 +5,7 @@ import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store"; // 1. IMPORT YOUR STORE
-import { Folder, Plus, LayoutDashboard, Inbox, CheckSquare, ChevronsUpDown, Check, Settings2, LogOut } from "lucide-react";
+import { Folder, Plus, LayoutDashboard, Inbox, CheckSquare, ChevronsUpDown, Check, Settings2, LogOut, User } from "lucide-react";
 
 import { useNotifications } from "@/hooks/api/use-notifications";
 
@@ -146,16 +146,7 @@ export function SidebarLeft() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              {/* 🟢 isActive highlights the button if the URL includes '/my-tasks' */}
-              <SidebarMenuButton asChild isActive={pathname.includes("/my-tasks")}>
-                {/* 🟢 THE FIX: Swap activeWorkspaceId for currentWorkspaceId */}
-                <Link href={`/dashboard/${currentWorkspaceId}/my-tasks`}>
-                  <CheckSquare className="h-4 w-4 shrink-0" />
-                  <span className="group-data-[collapsible=icon]:hidden">My Tasks</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+
             {/* 🟢 1. ADDED THE SETTINGS LINK HERE */}
             {activeWorkspace && (
               <SidebarMenuItem>
@@ -265,6 +256,13 @@ export function SidebarLeft() {
                 </div>
 
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  {/* 🟢 Routes to: /dashboard/cmmy.../profile */}
+                  <Link href={`/dashboard/${currentWorkspaceId}/profile`} className="cursor-pointer flex items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile Settings</span>
+                  </Link>
+                </DropdownMenuItem>
 
                 {/* 🟢 The Logout Button! */}
                 <DropdownMenuItem

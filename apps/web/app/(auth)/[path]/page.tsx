@@ -1,25 +1,3 @@
-/*"use client"
-
-import { AuthView } from "@repo/ui/src/components/auth-components"; // From your UI package
-import { useParams, notFound } from "next/navigation";
-
-export default function AuthPage() {
-    const params = useParams();
-    const path = params.path as string;
-
-    const validPaths = ["sign-in", "sign-up", "forgot-password", "reset-password"];
-    
-    if (!validPaths.includes(path)) {
-        return notFound();
-    }
-
-    return (
-        <main className="flex items-center justify-center min-h-screen p-4">
-            
-            <AuthView path={path} />
-        </main>
-    );
-}*/
 
 
 "use client"
@@ -50,7 +28,12 @@ export default function AuthPage() {
     return (
         <main className="flex items-center justify-center min-h-screen p-4">
             {/* 3. Pass the mapped 'view' to satisfy the type requirement */}
-            <AuthView view={view} /> 
+            <AuthView view={view} 
+           
+                
+            
+            
+            /> 
         </main>
     );
 }

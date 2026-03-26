@@ -1,12 +1,10 @@
 "use client";
 
-
 import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
-import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store"; // 1. IMPORT YOUR STORE
-import { Folder, Plus, LayoutDashboard, Inbox, CheckSquare, ChevronsUpDown, Check, Settings2, LogOut, User } from "lucide-react";
-
+import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store"; 
+import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User } from "lucide-react";
 import { useNotifications } from "@/hooks/api/use-notifications";
 
 import {
@@ -22,7 +20,6 @@ import {
   SidebarFooter
 } from "@repo/ui/components/sidebar";
 
-// 2. IMPORT DROPDOWN COMPONENTS
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,45 +29,37 @@ import {
 } from "@repo/ui/components/dropdown-menu";
 
 import { Badge } from "@repo/ui/components/badge";
-
 import Link from "next/link";
-
 import { useAuth } from "@/hooks/api/use-auth";
-import { usePathname, useParams } from "next/navigation";
 
-
-
-
+// 🟢 1. Import useRouter to fix the navigation sync!
+import { usePathname, useParams, useRouter } from "next/navigation";
 
 export function SidebarLeft() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useParams();
+  const currentWorkspaceId = params.workspaceId as string;
+
   const { data: workspaces } = useWorkspaces();
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
 
-
-  const { notifications = [] } = useNotifications(); // We'll build this next!
+  const { notifications = [] } = useNotifications(); 
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
-  // 3. GET ACTIVE WORKSPACE FROM STORE (Fallback to first if null)
   const activeWorkspace = workspaces?.find((w: any) => w.id === activeWorkspaceId) || workspaces?.[0];
 
   const { data: projects, isLoading: isProjectsLoading } = useProjects(activeWorkspace?.id);
   const setCreateProjectModalOpen = useUIStore((state) => state.setCreateProjectModalOpen);
   const { setOpen, state } = useSidebar();
-
   const { user, logout } = useAuth();
-
-  const pathname = usePathname();
-  const params = useParams();
-
-  const currentWorkspaceId = params.workspaceId as string;
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="pt-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            {/* 4. THE DROPDOWN MENU */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
@@ -102,7 +91,11 @@ export function SidebarLeft() {
                 {workspaces?.map((workspace: any) => (
                   <DropdownMenuItem
                     key={workspace.id}
-                    onClick={() => setActiveWorkspaceId(workspace.id)} // SAVES TO ZUSTAND
+                    onClick={() => {
+                      // 🟢 2. THE FIX: Sync global state AND force the URL to change instantly!
+                      setActiveWorkspaceId(workspace.id);
+                      router.push(`/dashboard/${workspace.id}`);
+                    }}
                     className="gap-2 p-2 cursor-pointer"
                   >
                     <div className="flex size-6 items-center justify-center rounded-sm border bg-background">
@@ -122,7 +115,6 @@ export function SidebarLeft() {
                     <Plus className="size-4" />
                   </div>
                   <div className="font-medium text-muted-foreground">Add workspace</div>
-
                 </DropdownMenuItem>
 
               </DropdownMenuContent>
@@ -136,37 +128,30 @@ export function SidebarLeft() {
         <SidebarGroup>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild // 🟢 CRITICAL: This allows the Link to behave as the button
-                isActive={pathname === `/dashboard/${activeWorkspaceId}`}
-              >
-                <Link href={`/dashboard/${activeWorkspaceId}`}>
+              <SidebarMenuButton asChild isActive={pathname === `/dashboard/${activeWorkspace?.id}`}>
+                <Link href={`/dashboard/${activeWorkspace?.id}`}>
                   <LayoutDashboard className="h-4 w-4 shrink-0" />
                   <span className="group-data-[collapsible=icon]:hidden">Dashboard</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
 
-            {/* 🟢 1. ADDED THE SETTINGS LINK HERE */}
             {activeWorkspace && (
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={pathname.includes("/settings")}>
                   <Link href={`/dashboard/${activeWorkspace.id}/settings`}>
                     <Settings2 className="h-4 w-4 shrink-0" />
                     <span className="group-data-[collapsible=icon]:hidden">Settings</span>
-
                   </Link>
-
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
+
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={false /* You can dynamically set this based on pathname */}>
+              <SidebarMenuButton asChild isActive={pathname.includes("/inbox")}>
                 <Link href={`/dashboard/${currentWorkspaceId}/inbox`}>
                   <Inbox className="h-4 w-4 shrink-0" />
                   <span className="group-data-[collapsible=icon]:hidden flex-1">Inbox</span>
-
-                  {/* 🟢 The Unread Badge */}
                   {unreadCount > 0 && (
                     <Badge
                       variant="destructive"
@@ -206,8 +191,7 @@ export function SidebarLeft() {
             ) : (
               projects?.map((project: any) => (
                 <SidebarMenuItem key={project.id}>
-                  {/* 🟢 2. WRAPPED PROJECTS IN NEXT.JS LINKS */}
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild isActive={pathname.includes(`/projects/${project.id}`)}>
                     <Link href={`/dashboard/${activeWorkspace?.id}/projects/${project.id}`}>
                       <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="group-data-[collapsible=icon]:hidden truncate">{project.name}</span>
@@ -219,6 +203,7 @@ export function SidebarLeft() {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -228,8 +213,13 @@ export function SidebarLeft() {
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-lg">
-                    {user?.name?.charAt(0).toUpperCase() || "U"}
+                  {/* 🟢 Added overflow hidden to prevent Avatar corners from poking out */}
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-lg overflow-hidden">
+                    {user?.image ? (
+                      <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
+                    ) : (
+                      user?.name?.charAt(0).toUpperCase() || "U"
+                    )}
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                     <span className="truncate font-semibold">{user?.name || "My Account"}</span>
@@ -246,8 +236,12 @@ export function SidebarLeft() {
                 sideOffset={4}
               >
                 <div className="flex items-center gap-2 p-2">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold">
-                    {user?.name?.charAt(0).toUpperCase() || "U"}
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold overflow-hidden">
+                    {user?.image ? (
+                      <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
+                    ) : (
+                      user?.name?.charAt(0).toUpperCase() || "U"
+                    )}
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">{user?.name || "My Account"}</span>
@@ -257,14 +251,12 @@ export function SidebarLeft() {
 
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  {/* 🟢 Routes to: /dashboard/cmmy.../profile */}
                   <Link href={`/dashboard/${currentWorkspaceId}/profile`} className="cursor-pointer flex items-center">
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile Settings</span>
                   </Link>
                 </DropdownMenuItem>
 
-                {/* 🟢 The Logout Button! */}
                 <DropdownMenuItem
                   onClick={() => logout()}
                   className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 gap-2"

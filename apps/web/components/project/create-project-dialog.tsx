@@ -5,14 +5,16 @@ import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiClient } from "../../app/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useUIStore } from "@/app/lib/stores/use-ui-store"; // Check your path
+import { useParams } from "next/navigation";
 
+import { useUIStore } from "@/app/lib/stores/use-ui-store"; 
+import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store"; 
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@repo/ui/components/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@repo/ui/components/dialog";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@repo/ui/components/form";
 
-// Validation: Identifier must be short and uppercase
 const projectSchema = z.object({
   name: z.string().min(2, "Project name is required"),
   identifier: z.string()
@@ -23,9 +25,16 @@ const projectSchema = z.object({
 
 type FormData = z.infer<typeof projectSchema>;
 
-export function CreateProjectDialog({ workspaceId }: { workspaceId: string }) {
+export function CreateProjectDialog() {
   const queryClient = useQueryClient();
   const { isCreateProjectModalOpen, setCreateProjectModalOpen } = useUIStore();
+
+  const params = useParams();
+  const urlWorkspaceId = params?.workspaceId as string;
+  const storeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+  
+  // 🟢 Always prioritize the URL, fallback to the store
+  const activeWorkspaceId = urlWorkspaceId || storeWorkspaceId;
   
   const form = useForm<FormData>({
     resolver: zodResolver(projectSchema),
@@ -33,67 +42,127 @@ export function CreateProjectDialog({ workspaceId }: { workspaceId: string }) {
   });
 
   const onSubmit = async (data: FormData) => {
+    if (!activeWorkspaceId) {
+      form.setError("root", { type: "manual", message: "No active workspace selected!" });
+      return;
+    }
+
     try {
-      // Send to Fastify API
       await apiClient.post("/projects", {
         name: data.name,
         identifier: data.identifier,
-        workspaceId: workspaceId,
+        workspaceId: activeWorkspaceId, 
       });
       
-      // Refresh the projects list to trigger the Kanban board render
-      queryClient.invalidateQueries({ queryKey: ["projects", workspaceId] });
+      // Refresh the projects list to trigger the sidebar update
+      queryClient.invalidateQueries({ queryKey: ["projects", activeWorkspaceId] });
       
       // Close modal and reset form
       setCreateProjectModalOpen(false);
       form.reset();
     } catch (error: any) {
       console.error("API Error creating project:", error);
+      
+      // 🟢 THE FIX: Perfectly matches your Fastify JSON payload
+      const errData = error.response?.data;
+      
+      if (errData?.code === "P2002" || errData?.message?.includes("Unique constraint")) {
+        form.setError("identifier", { 
+          type: "manual", 
+          message: `The identifier "${form.getValues("identifier")}" is already used in this workspace.` 
+        });
+      } else {
+        form.setError("root", { 
+          type: "manual", 
+          message: errData?.message || "Failed to create project. Please try again." 
+        });
+      }
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) form.reset();
+    setCreateProjectModalOpen(open);
+  };
+
   return (
-    <Dialog open={isCreateProjectModalOpen} onOpenChange={setCreateProjectModalOpen}>
+    <Dialog open={isCreateProjectModalOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create New Project</DialogTitle>
+          <DialogDescription>
+            Group your tasks and issues into a new project board.
+          </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Project Name</label>
-            <Input 
-              {...form.register("name")} 
-              placeholder="e.g. Frontend Redesign" 
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
+            
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Project Name</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="e.g. Frontend Redesign" 
+                      autoFocus
+                      {...field} 
+                      onChange={(e) => {
+                        field.onChange(e);
+                        // Auto-generate the identifier based on the name!
+                        const nameVal = e.target.value;
+                        if (!form.formState.dirtyFields.identifier && nameVal.length > 0) {
+                          const initials = nameVal.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
+                          const fallback = nameVal.substring(0, 3).toUpperCase();
+                          const cleanSuggestion = (initials.length > 1 ? initials : fallback).replace(/[^A-Z0-9]/g, '');
+                          form.setValue("identifier", cleanSuggestion);
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            {form.formState.errors.name && (
-              <p className="text-xs text-red-500">{form.formState.errors.name.message}</p>
-            )}
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Project Identifier</label>
-            <Input 
-              {...form.register("identifier")} 
-              placeholder="e.g. FRD, ENG, TASK" 
-              onChange={(e) => {
-                // Auto-uppercase as the user types
-                e.target.value = e.target.value.toUpperCase();
-                form.setValue("identifier", e.target.value);
-              }}
+            <FormField
+              control={form.control}
+              name="identifier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Project Identifier</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="e.g. FRD, ENG, TASK" 
+                      {...field} 
+                      onChange={(e) => {
+                        // Force uppercase instantly
+                        const upperVal = e.target.value.toUpperCase();
+                        field.onChange(upperVal);
+                      }}
+                    />
+                  </FormControl>
+                  <FormDescription className="text-[10px]">
+                    This is used to generate task numbers (e.g., ENG-1).
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <p className="text-[10px] text-muted-foreground">
-              This is used to generate task numbers (e.g., ENG-1).
-            </p>
-            {form.formState.errors.identifier && (
-              <p className="text-xs text-red-500">{form.formState.errors.identifier.message}</p>
+            
+            {form.formState.errors.root && (
+              <div className="p-2 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
+                {form.formState.errors.root.message}
+              </div>
             )}
-          </div>
-          
-          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Creating..." : "Create Project"}
-          </Button>
-        </form>
+
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? "Creating..." : "Create Project"}
+            </Button>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

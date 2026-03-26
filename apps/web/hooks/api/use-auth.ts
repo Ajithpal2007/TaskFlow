@@ -1,45 +1,41 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "../../app/lib/api-client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+
+import { authClient } from "@/app/lib/auth/client"; 
 
 export const useAuth = () => {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // 1. Fetch Current User Session
-  const { data: user, isLoading, isError } = useQuery({
-    queryKey: ["auth-user"],
-    queryFn: async () => {
-      try {
-        // Better Auth standard endpoint for getting the session
-        const { data } = await apiClient.get("/auth/get-session");
-        return data?.user || null;
-      } catch (error) {
-        return null;
-      }
-    },
-    // Keep the session for 5 minutes before re-checking
-    staleTime: 5 * 60 * 1000, 
-    retry: false, // Don't retry if 401, it just means they aren't logged in
-  });
+  // 🟢 2. Use Better Auth's native hook instead of manual TanStack Query
+  const { data: session, isPending: isLoading, error } = authClient.useSession();
 
-  // 2. Logout Function
+  // 3. Logout Function
   const logout = async () => {
     try {
-      await apiClient.post("/auth/sign-out");
-      // Clear all queries from the cache so the next user doesn't see Ajith's tasks
-      queryClient.clear();
-      router.push("/login");
+      // 🟢 4. Use Better Auth's native sign-out method
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            // Clear all queries from the cache so the next user doesn't see old tasks
+            queryClient.clear();
+            
+            // 🟢 5. Redirect to the Landing Page!
+            router.push("/");
+          }
+        }
+      });
     } catch (error) {
       console.error("Logout failed", error);
     }
   };
 
   return {
-    user,
-    isAuthenticated: !!user,
+    user: session?.user || null,
+    session, // Exposing session just in case you need it later
+    isAuthenticated: !!session?.user,
     isLoading,
-    isError,
+    isError: !!error,
     logout,
   };
 };

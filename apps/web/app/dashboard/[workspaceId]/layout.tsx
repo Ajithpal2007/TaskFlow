@@ -36,7 +36,7 @@ export default function WorkspaceLayout({
   useEffect(() => {
     // If the check is done, and they aren't authenticated (or there was an error)
     if (!isAuthLoading && (!isAuthenticated || isError)) {
-      router.push("/login"); 
+      router.push("/"); 
     }
   }, [isAuthLoading, isAuthenticated, isError, router]);
 
@@ -97,7 +97,7 @@ export default function WorkspaceLayout({
         {children}
 
         {/* HIDDEN GLOBAL DIALOGS */}
-        <CreateProjectDialog workspaceId={params.workspaceId} />
+        <CreateProjectDialog  />
         <TaskDetailsDialog />
         <GlobalSearch />
       </SidebarInset>

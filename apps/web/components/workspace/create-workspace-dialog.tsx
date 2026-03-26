@@ -1,95 +1,119 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-// We temporarily remove the zodResolver here so it doesn't block the form asking for a slug
-import { apiClient } from "../../app/lib/api-client";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { apiClient } from "@/app/lib/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+
+import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store"; 
+
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@repo/ui/components/dialog";
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
-import { useQueryClient } from "@tanstack/react-query";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@repo/ui/components/form";
+import { Plus } from "lucide-react";
 
-
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-
-
-
-
-
-// 1. Create a UI-only schema (only expects 'name')
-const uiSchema = z.object({
-  name: z.string().min(2, "Workspace name must be at least 2 characters"),
+const workspaceSchema = z.object({
+  name: z.string().min(2, "Workspace name is required"),
 });
 
-type FormData = z.infer<typeof uiSchema>;
+type FormData = z.infer<typeof workspaceSchema>;
 
-export function CreateWorkspaceDialog({ isFirstWorkspace }: { isFirstWorkspace?: boolean }) {
+// 🟢 1. Create the TypeScript Interface to accept the prop
+interface CreateWorkspaceDialogProps {
+  isFirstWorkspace?: boolean;
+}
+
+// 🟢 2. Destructure the prop and give it a default value of false
+export function CreateWorkspaceDialog({ isFirstWorkspace = false }: CreateWorkspaceDialogProps) {
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
   
+  const [isOpen, setIsOpen] = useState(false);
+
   const form = useForm<FormData>({
-    resolver: zodResolver(uiSchema),
+    resolver: zodResolver(workspaceSchema),
     defaultValues: { name: "" }
   });
 
   const onSubmit = async (data: FormData) => {
-    console.log("1. Button Clicked! Form Data:", data); // DEBUG LOG
-
     try {
-      // 2. Safely generate slug
-      let generatedSlug = data.name
-        .toLowerCase()
-        .trim()
-        .replace(/[\s_]+/g, '-')
-        .replace(/[^\w-]+/g, '');
-      
-      generatedSlug = `${generatedSlug}-${Math.floor(Math.random() * 1000)}`;
+      const response = await apiClient.post("/workspaces", { name: data.name });
+      const newWorkspace = response.data?.data; 
 
-      const payload = {
-        name: data.name,
-        slug: generatedSlug,
-      };
-
-      console.log("2. Sending payload to API:", payload); // DEBUG LOG
-
-      // 3. Send to Fastify
-      const response = await apiClient.post("/workspaces", payload);
-      
-      console.log("3. API Success!", response.data); // DEBUG LOG
-      
-      // 4. Trigger the Dashboard refresh
-      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
-      
+      if (newWorkspace?.id) {
+        queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+        setActiveWorkspaceId(newWorkspace.id);
+        
+        setIsOpen(false);
+        form.reset();
+        
+        router.push(`/dashboard/${newWorkspace.id}`);
+      }
     } catch (error: any) {
-      console.error("API Error creating workspace:", error.response?.data || error.message);
+      console.error("API Error creating workspace:", error);
+      form.setError("root", {
+        type: "manual",
+        message: error.response?.data?.message || "Failed to create workspace. Please try again."
+      });
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) form.reset();
+    setIsOpen(open);
+  };
+
   return (
-    <div className="w-full max-w-sm rounded-xl border bg-card p-6 shadow-lg">
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 text-left">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Workspace Name</label>
-          <Input 
-            {...form.register("name")} 
-            placeholder="e.g. Ajith's Team" 
-            autoFocus
-          />
-          {/* SHOW ERRORS IF VALIDATION FAILS */}
-          {form.formState.errors.name && (
-            <p className="text-xs text-red-500 font-medium">
-              {form.formState.errors.name.message}
-            </p>
-          )}
-        </div>
-        
-        <Button 
-          type="submit" 
-          className="w-full"
-          disabled={form.formState.isSubmitting}
-        >
-          {form.formState.isSubmitting ? "Creating..." : "Create Workspace"}
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        {/* 🟢 3. Make the UI dynamic based on the prop! */}
+        <Button size={isFirstWorkspace ? "lg" : "default"} className="gap-2 shadow-sm">
+          <Plus className="h-5 w-5" />
+          {isFirstWorkspace ? "Create Your First Workspace" : "New Workspace"}
         </Button>
-      </form>
-    </div>
+      </DialogTrigger>
+      
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Create Workspace</DialogTitle>
+          <DialogDescription>
+            A workspace contains all your team's projects, tasks, and members.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-2">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Workspace Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Acme Corp" autoFocus {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {form.formState.errors.root && (
+              <div className="p-2 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20">
+                {form.formState.errors.root.message}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? "Creating..." : "Create Workspace"}
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

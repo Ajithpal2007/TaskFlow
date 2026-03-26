@@ -59,6 +59,12 @@ export async function buildServer() {
     timestamp: new Date().toISOString(),
   }));
 
+  fastify.get("/", async (request, reply) => {
+    // When Google OAuth drops them on localhost:4000, 
+    // instantly ping them back to localhost:3000/dashboard
+    return reply.redirect("http://localhost:3000/dashboard");
+  });
+
   // Routes will be registered here as you build them
   await fastify.register(authRoutes);
 

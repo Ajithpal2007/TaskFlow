@@ -87,6 +87,10 @@ export async function buildServer() {
     prefix: "/api/notifications",
   });
 
+  await fastify.register(import("./routes/ai/index.js"), {
+    prefix: "/api/ai",
+  });
+
  
 
   return fastify;

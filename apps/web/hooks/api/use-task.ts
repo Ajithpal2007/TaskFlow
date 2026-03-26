@@ -30,47 +30,81 @@ export function useTask(taskId: string | null, onClose?: () => void, selectedTas
   });
 
   // 2. MAIN TASK MUTATIONS
+  // 2. MAIN TASK MUTATIONS
   const updateTaskMutation = useMutation({
-    mutationFn: async (updates: any) => {
-      const { data } = await apiClient.patch(`/tasks/${taskId}`, updates);
+    // 🟢 BULLETPROOF UNWRAPPER: Safely extracts the data whether it's nested or flat!
+    mutationFn: async (payload: any) => {
+      const actualUpdates = payload.updates ? payload.updates : payload;
+      const idToUpdate = payload.taskId ? payload.taskId : taskId;
+
+      // Now the backend receives exactly { description: "<p>hello...</p>" }
+      const { data } = await apiClient.patch(`/tasks/${idToUpdate}`, actualUpdates);
       return data.data;
     },
-    onMutate: async (updates) => {
-      const previousSingleTask: any = queryClient.getQueryData(["task", taskId]);
+    onMutate: async (payload) => {
+      const actualUpdates = payload.updates ? payload.updates : payload;
+      const idToUpdate = payload.taskId ? payload.taskId : taskId;
+      
+      const previousSingleTask: any = queryClient.getQueryData(["task", idToUpdate]);
       const projectId = previousSingleTask?.projectId;
 
-      await queryClient.cancelQueries({ queryKey: ["task", taskId] });
+      await queryClient.cancelQueries({ queryKey: ["task", idToUpdate] });
       if (projectId) await queryClient.cancelQueries({ queryKey: ["tasks", projectId] });
 
       const previousTasks = projectId ? queryClient.getQueryData(["tasks", projectId]) : [];
 
-      queryClient.setQueryData(["task", taskId], (oldTask: any) => ({ ...oldTask, ...updates }));
+      queryClient.setQueryData(["task", idToUpdate], (oldTask: any) => {
+        if (!oldTask) return oldTask;
+        return { ...oldTask, ...actualUpdates }; 
+      });
 
       if (projectId) {
         queryClient.setQueryData(["tasks", projectId], (oldTasks: any) => {
           if (!oldTasks) return [];
-          return oldTasks.map((t: any) => t.id === taskId ? { ...t, ...updates } : t);
+          const currentList = Array.isArray(oldTasks) ? oldTasks : oldTasks?.data || [];
+          return currentList.map((t: any) => 
+            t.id === idToUpdate ? { ...t, ...actualUpdates } : t
+          );
         });
       }
 
-      return { previousTasks, previousSingleTask, projectId };
+      return { previousTasks, previousSingleTask, projectId, idToUpdate };
     },
     onError: (err, variables, context) => {
-      queryClient.setQueryData(["task", taskId], context?.previousSingleTask);
+      console.error("❌ Update Task Failed:", err);
+      if (context?.idToUpdate) queryClient.setQueryData(["task", context.idToUpdate], context?.previousSingleTask);
       if (context?.projectId) queryClient.setQueryData(["tasks", context.projectId], context?.previousTasks);
     },
     onSettled: (data, error, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ["task", taskId] });
+      if (context?.idToUpdate) queryClient.invalidateQueries({ queryKey: ["task", context.idToUpdate] });
       if (context?.projectId) queryClient.invalidateQueries({ queryKey: ["tasks", context.projectId] });
     },
   });
+
+
+
 
   const deleteTaskMutation = useMutation({
     mutationFn: async () => {
       await apiClient.delete(`/tasks/${taskId}`);
     },
     onSuccess: () => {
+      // 1. Grab the projectId from the current task before we clear it
+      const taskData: any = queryClient.getQueryData(["task", taskId]);
+      const projectId = taskData?.projectId;
+
+      // 2. Clear the individual task cache
       queryClient.invalidateQueries({ queryKey: ["task", taskId] });
+      
+      // 3. 🟢 THE FIX: Tell the Kanban board to refresh its list!
+      if (projectId) {
+        queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+      } else {
+        // Fallback just in case projectId isn't loaded: refresh ALL tasks
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      }
+
+      // 4. Close the modal
       if (onClose) onClose();
     },
   });

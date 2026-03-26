@@ -72,13 +72,17 @@ export const useTasks = (projectId?: string) => {
 
       queryClient.setQueryData(QUERY_KEY, (oldTasks: any) => {
         if (!oldTasks) return [];
-        return oldTasks.map((task: any) =>
+
+        const currentList = Array.isArray(oldTasks) ? oldTasks : oldTasks?.data || [];
+        
+        return currentList.map((task: any) =>
           task.id === taskId ? { ...task, ...updates } : task,
         );
       });
       return { previousTasks, QUERY_KEY };
     },
     onError: (err, newTodo, context) => {
+      console.error("Update Task Mutation Failed:", err);
       if (context?.QUERY_KEY)
         queryClient.setQueryData(context.QUERY_KEY, context.previousTasks);
     },

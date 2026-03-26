@@ -14,10 +14,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.48",
     "@fastify/cors": "^11.2.0",
     "@fastify/helmet": "13.0.2",
     "@fastify/websocket": "^11.2.0",
     "@repo/database": "workspace:*",
+    "ai": "^6.0.138",
     "auth": "workspace:*",
     "better-auth": "^1.5.5",
     "dotenv": "^17.3.1",

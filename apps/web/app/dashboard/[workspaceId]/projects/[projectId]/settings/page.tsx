@@ -12,6 +12,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 import { useWorkspace } from "@/hooks/api/use-workspace";
 
+// Add these to your existing imports
+import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/app/lib/api-client";
+
 export default function ProjectSettingsPage({ params }: { params: { workspaceId: string; projectId: string } }) {
   const { workspaceId, projectId } = params;
 
@@ -40,6 +45,23 @@ export default function ProjectSettingsPage({ params }: { params: { workspaceId:
 
   // C. THE MASTER KEY: They can manage if they are a Project Manager OR a Workspace Admin!
   const canManageProject = isWorkspaceAdmin || isProjectManager;
+
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  // 🟢 MUTATION: Delete Project
+  const deleteProjectMutation = useMutation({
+    mutationFn: async () => {
+      // Assuming your project routes are prefixed with /projects in the apiClient
+      await apiClient.delete(`/projects/${projectId}`);
+    },
+    onSuccess: () => {
+      // Refresh the project list for this workspace
+      queryClient.invalidateQueries({ queryKey: ["projects", workspaceId] });
+      // Kick them back to the workspace overview!
+      router.push(`/dashboard/${workspaceId}`); 
+    },
+  });
 
   
   const { data: projectMembers, isLoading: isProjectsLoading } = useProjects(workspaceId);
@@ -170,6 +192,36 @@ export default function ProjectSettingsPage({ params }: { params: { workspaceId:
               </CardFooter>
             )}
           </Card>
+
+          {/* --- DANGER ZONE (ONLY VISIBLE TO MANAGERS/ADMINS) --- */}
+          {canManageProject && (
+            <Card className="border-destructive/50 mt-12">
+              <CardHeader>
+                <CardTitle className="text-destructive flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5" /> Danger Zone
+                </CardTitle>
+                <CardDescription>
+                  Permanently delete this project and all of its tasks, columns, and history. This action cannot be undone.
+                </CardDescription>
+              </CardHeader>
+              <CardFooter className="bg-destructive/5 border-t border-destructive/20 px-6 py-4">
+                <Button
+                  variant="destructive"
+                  disabled={deleteProjectMutation.isPending}
+                  onClick={() => {
+                    const confirmed = window.confirm(
+                      "Are you absolutely sure you want to delete this project? All tasks will be destroyed forever."
+                    );
+                    if (confirmed) {
+                      deleteProjectMutation.mutate();
+                    }
+                  }}
+                >
+                  {deleteProjectMutation.isPending ? "Deleting Project..." : "Delete Project"}
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
 
         </div>
       </div>

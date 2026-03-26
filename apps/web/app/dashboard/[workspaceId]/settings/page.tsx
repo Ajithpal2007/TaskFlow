@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useWorkspace, useUpdateWorkspace, useInviteMember } from "@/hooks/api/use-workspace";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/app/lib/api-client";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
@@ -40,6 +41,20 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
       await apiClient.delete(`/workspaces/${params.workspaceId}/members/${memberId}`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["workspace", params.workspaceId] }),
+  });
+
+  const router = useRouter();
+
+  // 🟢 3. MUTATION: Delete Workspace
+  const deleteWorkspaceMutation = useMutation({
+    mutationFn: async () => {
+      await apiClient.delete(`/workspaces/${params.workspaceId}`);
+    },
+    onSuccess: () => {
+      // Refresh the global workspaces list and kick the user out to the dashboard
+      queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+      router.push("/dashboard"); // Change this to wherever your main app route is!
+    },
   });
 
   const [workspaceName, setWorkspaceName] = useState("");
@@ -197,10 +212,44 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
                 ) : (
                   <div className="text-sm text-muted-foreground">No members found.</div>
                 )}
+
+
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* --- DANGER ZONE (ONLY VISIBLE TO ADMINS/OWNERS) --- */}
+        {canManageInvites && (
+          <Card className="border-destructive/50 mt-12">
+            <CardHeader>
+              <CardTitle className="text-destructive flex items-center gap-2">
+                <ShieldAlert className="h-5 w-5" /> Danger Zone
+              </CardTitle>
+              <CardDescription>
+                Permanently delete this workspace and all of its projects, tasks, and data. This action cannot be undone.
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="bg-destructive/5 border-t border-destructive/20 px-6 py-4">
+              <Button
+                variant="destructive"
+                disabled={deleteWorkspaceMutation.isPending}
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    "Are you absolutely sure you want to delete this workspace? All projects and tasks will be destroyed."
+                  );
+                  if (confirmed) {
+                    deleteWorkspaceMutation.mutate();
+                  }
+                }}
+              >
+                {deleteWorkspaceMutation.isPending ? "Deleting Workspace..." : "Delete Workspace"}
+              </Button>
+            </CardFooter>
+          </Card>
+        )}
+
+
       </div>
     </div>
   );

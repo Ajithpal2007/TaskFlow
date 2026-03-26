@@ -123,6 +123,38 @@ export default async function projectRoutes(fastify: FastifyInstance) {
     },
   );
 
+
+  // 🔴 DELETE /api/projects/:projectId
+  fastify.delete(
+    "/:projectId",
+    {
+      preHandler: [
+        requireAuth,
+        requireProjectRole([ProjectRole.MANAGER])
+      ],
+    },
+    async (request, reply) => {
+      const { projectId } = request.params as { projectId: string };
+
+      try {
+        await prisma.project.delete({
+          where: { id: projectId },
+        });
+
+        return reply.code(200).send({ 
+          message: "Project deleted successfully", 
+          deletedProjectId: projectId 
+        });
+      } catch (error) {
+        // Prisma throws an error if the record to delete does not exist
+        return reply.code(500).send({ 
+          message: "Failed to delete project. It may not exist.", 
+          error 
+        });
+      }
+    }
+  );
+
   
 }
 

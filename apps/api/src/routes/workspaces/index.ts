@@ -490,5 +490,38 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+
+// 🔴 DELETE /api/workspaces/:workspaceId
+  fastify.delete(
+    "/:workspaceId",
+    {
+      preHandler: [
+        requireAuth,
+        // Ensure you have this middleware created for Workspace roles!
+        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]) 
+      ],
+    },
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
+
+      try {
+        await prisma.workspace.delete({
+          where: { id: workspaceId },
+        });
+
+        return reply.code(200).send({ 
+          message: "Workspace deleted successfully", 
+          deletedWorkspaceId: workspaceId 
+        });
+      } catch (error) {
+        return reply.code(500).send({ 
+          message: "Failed to delete workspace.", 
+          error 
+        });
+      }
+    }
+  );
+
 }
 

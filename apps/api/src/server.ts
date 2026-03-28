@@ -108,6 +108,10 @@ export async function buildServer() {
   });
 
   
+  await fastify.register(import("./routes/search/index.js"), {
+    prefix: "/api/search",
+  });
+
  
 
   return fastify;

@@ -51,3 +51,54 @@ export const sendInviteEmail = async (to: string, inviterName: string, workspace
 
   await transporter.sendMail(mailOptions);
 };
+
+
+
+
+
+// 🟢 THE NEW DOCUMENT INVITE SERVICE
+export const sendDocumentInviteEmail = async (
+  to: string,
+  inviterName: string,
+  documentTitle: string,
+  workspaceId: string,
+  docId: string,
+  accessLevel: string,
+  isNewUser: boolean
+) => {
+  const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  
+  // If they are new, send them to signup. If existing, send them straight to the doc!
+  const actionLink = isNewUser 
+    ? `${baseUrl}/signup` 
+    : `${baseUrl}/dashboard/${workspaceId}/docs/${docId}`;
+
+  const subject = isNewUser 
+    ? `${inviterName} invited you to join TaskFlow` 
+    : `${inviterName} shared a document with you`;
+
+  const mailOptions = {
+    from: `"TaskFlow" <${process.env.SMTP_USER}>`,
+    to,
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; padding: 20px; max-w: 600px; margin: 0 auto; border: 1px solid #eaeaec; border-radius: 8px;">
+        <h2 style="color: #333;">${isNewUser ? "Join TaskFlow to collaborate" : "You've been invited!"}</h2>
+        <p style="color: #555; line-height: 1.5;">
+          <strong>${inviterName}</strong> has given you <strong>${accessLevel}</strong> access to the document: <strong>${documentTitle}</strong>.
+        </p>
+        ${isNewUser ? `<p style="color: #555;">Create an account to view and collaborate on this document.</p>` : ""}
+        <div style="margin: 30px 0;">
+          <a href="${actionLink}" style="display: inline-block; padding: 12px 24px; background-color: #0f172a; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            ${isNewUser ? "Create an Account" : "Open Document"}
+          </a>
+        </div>
+        <p style="margin-top: 20px; font-size: 12px; color: #888;">
+          If you did not expect this invitation, you can safely ignore this email.
+        </p>
+      </div>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};

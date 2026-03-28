@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/database";
 import { requireAuth } from "../../middleware/require-auth.js";
+import { sendDocumentInviteEmail } from "../../services/email.service.js";
 
 const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // 🟢 1. GET ALL DOCS FOR SIDEBAR (The Recursive Tree)
@@ -197,6 +198,58 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
   );
+
+  // 🟢 8. INVITE COLLABORATOR
+  fastify.post(
+    "/docs/:docId/invite",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { docId } = request.params as { docId: string };
+      const { email, accessLevel } = request.body as { email: string; accessLevel: string };
+      const inviterId = (request as any).user.id;
+
+      try {
+        // 1. Get the data needed for the email
+        const document = await prisma.document.findUnique({ where: { id: docId } });
+        const inviter = await prisma.user.findUnique({ where: { id: inviterId } });
+
+        if (!document || !inviter) {
+          return reply.code(404).send({ message: "Document or User not found" });
+        }
+
+        // 2. Check if the user exists
+        const invitedUser = await prisma.user.findUnique({ where: { email } });
+
+        if (invitedUser) {
+          // 🟢 USER EXISTS: Save access to Postgres and send the standard email
+          await prisma.documentAccess.upsert({
+            where: { documentId_userId: { documentId: docId, userId: invitedUser.id } },
+            update: { accessLevel },
+            create: { documentId: docId, userId: invitedUser.id, accessLevel }
+          });
+
+          await sendDocumentInviteEmail(
+            email, inviter.name!, document.title, document.workspaceId, docId, accessLevel, false
+          );
+
+          return reply.code(200).send({ message: "Access granted and email sent!" });
+        } else {
+          // 🟡 USER DOES NOT EXIST: Send the "Join TaskFlow" email
+          await sendDocumentInviteEmail(
+            email, inviter.name!, document.title, document.workspaceId, docId, accessLevel, true
+          );
+
+          return reply.code(200).send({ message: "Invite email sent to new user!" });
+        }
+
+      } catch (error) {
+        console.error("Invite Error:", error);
+        return reply.code(500).send({ message: "Failed to send invite", error });
+      }
+    }
+  );
+
+  
 };
 
 export default documentRoutes;

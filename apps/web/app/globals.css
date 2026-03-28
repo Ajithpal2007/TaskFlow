@@ -143,3 +143,32 @@
   min-height: calc(100vh - 300px) !important;
   padding-bottom: 100px !important; /* Gives some breathing room at the bottom */
 }
+
+
+/* Target links that start with @ inside the BlockNote editor */
+.bn-inline-content a[href*="/users/"], 
+.bn-inline-content a[href*="/projects/"] {
+  background-color: oklch(var(--primary) / 0.1); /* Subtle theme-aware background */
+  color: var(--primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-decoration: none !important;
+  font-weight: 500;
+  border: 1px solid oklch(var(--primary) / 0.2);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.bn-inline-content a[href*="/users/"]:hover, 
+.bn-inline-content a[href*="/projects/"]:hover {
+  background-color: oklch(var(--primary) / 0.2);
+  transform: translateY(-1px);
+}
+
+/* Optional: Different color for Projects vs Users */
+.bn-inline-content a[href*="/projects/"] {
+  background-color: oklch(var(--accent) / 0.1);
+  color: var(--accent-foreground);
+  border-color: oklch(var(--accent) / 0.2);
+}

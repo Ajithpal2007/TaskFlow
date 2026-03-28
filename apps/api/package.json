@@ -19,13 +19,17 @@
     "@fastify/helmet": "13.0.2",
     "@fastify/websocket": "^11.2.0",
     "@repo/database": "workspace:*",
+    "@y/protocols": "1.0.6-0",
     "ai": "^6.0.138",
     "auth": "workspace:*",
     "better-auth": "^1.5.5",
     "dotenv": "^17.3.1",
     "fastify": "^5.8.2",
+    "lib0": "^0.2.117",
     "nodemailer": "^8.0.3",
-    "uploadthing": "^7.7.4"
+    "uploadthing": "^7.7.4",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.30"
   },
   "devDependencies": {
     "@repo/validators": "workspace:*",

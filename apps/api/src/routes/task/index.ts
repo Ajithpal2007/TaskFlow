@@ -385,5 +385,29 @@ fastify.post("/:taskId/links", async (request, reply) => {
       }
     }
   );
+
+  // 🟢 1. GET ALL TASKS FOR A WORKSPACE
+  fastify.get(
+    "/workspace/:workspaceId",
+    { preHandler: [requireAuth] }, // Assuming you use this middleware!
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
+      
+      try {
+        const tasks = await prisma.task.findMany({
+          where: { 
+            project: { workspaceId: workspaceId }
+          },
+          orderBy: { createdAt: "desc" },
+        });
+        return reply.code(200).send({ data: tasks });
+      } catch (error) {
+        return reply.code(500).send({ message: "Failed to fetch workspace tasks", error });
+      }
+    }
+  );
+
+  // 🟢 2. GET ALL TASKS FOR A SPECIFIC PROJECT
+ 
 };
 

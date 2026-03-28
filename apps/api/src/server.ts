@@ -8,6 +8,9 @@ import websocket from "@fastify/websocket";
 import { createRouteHandler } from "uploadthing/fastify";
 import { ourFileRouter } from "./lib/uploadthing";
 
+import { setupWSConnection } from "./lib/yjs-utils.js";
+
+
 export async function buildServer() {
   const fastify = Fastify({
     logger:
@@ -18,6 +21,8 @@ export async function buildServer() {
 
   await fastify.register(websocket);
 
+  
+
   // 🟢 Add this Global Test Route to bypass all middleware!
   fastify.get("/ws-test", { websocket: true }, (connection, request) => {
     console.log("🟢 GLOBAL WS TEST HIT!");
@@ -26,6 +31,13 @@ export async function buildServer() {
     connection.on("message", (msg) => {
       console.log("Global received:", msg.toString());
     });
+  });
+
+
+  // 🟢 THE NEW YJS COLLABORATION ROUTE
+  fastify.get("/api/collaboration/:documentId", { websocket: true }, (connection, request) => {
+
+    setupWSConnection(connection, request.raw);
   });
 
   await fastify.register(cors, {
@@ -91,6 +103,11 @@ export async function buildServer() {
     prefix: "/api/ai",
   });
 
+  await fastify.register(import("./routes/documents/index.js"), {
+    prefix: "/api",
+  });
+
+  
  
 
   return fastify;

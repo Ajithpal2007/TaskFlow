@@ -233,3 +233,16 @@
 }
 
 @source "../../../../packages/ui/src/**/*.{js,ts,jsx,tsx}";
+
+
+/* 🟢 NOTION-STYLE BLOCKNOTE OVERRIDES */
+.bn-container {
+  /* Make the background completely transparent so it blends with the page */
+  --bn-colors-editor-background: transparent !important;
+}
+
+.bn-editor {
+  /* Force the clickable typing area to stretch to the bottom of the screen */
+  min-height: calc(100vh - 300px) !important;
+  padding-bottom: 100px !important; /* Gives some breathing room at the bottom */
+}

@@ -523,5 +523,22 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // Add this to your Fastify document routes
+  fastify.get(
+    "/workspaces/:workspaceId/docs",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
+      
+      const docs = await prisma.document.findMany({
+        where: { workspaceId },
+        orderBy: { updatedAt: "desc" },
+        select: { id: true, title: true, updatedAt: true } // Don't fetch the heavy JSON content here!
+      });
+      
+      return reply.code(200).send({ data: docs });
+    }
+  );
+
 }
 

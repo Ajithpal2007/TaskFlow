@@ -3,8 +3,8 @@
 import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
-import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store"; 
-import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User } from "lucide-react";
+import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
+import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2 } from "lucide-react";
 import { useNotifications } from "@/hooks/api/use-notifications";
 
 import {
@@ -35,6 +35,15 @@ import { useAuth } from "@/hooks/api/use-auth";
 // 🟢 1. Import useRouter to fix the navigation sync!
 import { usePathname, useParams, useRouter } from "next/navigation";
 
+import { DocumentItem } from "./document-item";
+import { useDocuments } from "@/hooks/api/use-documents";
+import { useCreateDocument } from "@/hooks/api/use-create-document";
+import { Button } from "@repo/ui/components/button";
+
+import { useMoveDocument } from "@/hooks/api/use-move-document";
+import { useState } from "react";
+import { cn } from "@repo/ui/src/lib/utils";
+
 export function SidebarLeft() {
   const router = useRouter();
   const pathname = usePathname();
@@ -45,7 +54,7 @@ export function SidebarLeft() {
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
   const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
 
-  const { notifications = [] } = useNotifications(); 
+  const { notifications = [] } = useNotifications();
   const unreadCount = notifications.filter((n: any) => !n.isRead).length;
 
   const activeWorkspace = workspaces?.find((w: any) => w.id === activeWorkspaceId) || workspaces?.[0];
@@ -54,6 +63,14 @@ export function SidebarLeft() {
   const setCreateProjectModalOpen = useUIStore((state) => state.setCreateProjectModalOpen);
   const { setOpen, state } = useSidebar();
   const { user, logout } = useAuth();
+
+
+  const { data: documents, isLoading: isDocsLoading } = useDocuments(activeWorkspace?.id);
+
+  const { mutate: createDoc } = useCreateDocument();
+
+  const { mutate: moveDocument } = useMoveDocument();
+  const [isRootDragOver, setIsRootDragOver] = useState(false);
 
   return (
     <Sidebar collapsible="icon">
@@ -136,6 +153,8 @@ export function SidebarLeft() {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
+
+
             {activeWorkspace && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.includes("/settings")}>
@@ -163,7 +182,90 @@ export function SidebarLeft() {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+
+            <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.includes("/trash")}>
+              <Link href={`/dashboard/${activeWorkspaceId}/trash`}>
+                <Trash2 className="h-4 w-4" />
+                <span>Trash</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+
           </SidebarMenu>
+        </SidebarGroup>
+
+
+        {/* 🟢 THE INFINITE DOCUMENTS TREE */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center justify-between group">
+            Documents
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                if (!user || !activeWorkspace) return;
+
+                // Creates a ROOT document (parentId is undefined)
+                createDoc({
+                  title: "New Document",
+                  workspaceId: activeWorkspace.id,
+                  authorId: user.id,
+                });
+              }}
+              className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted p-1.5 rounded-md text-muted-foreground hover:text-foreground"
+              title="Create new document"
+            >
+              <Plus className="h-4 w-4 shrink-0" />
+            </button>
+          </SidebarGroupLabel>
+
+          <div className="mt-1 space-y-0.5">
+            {isDocsLoading ? (
+              // Loading State
+              <div className="px-4 py-2 text-xs text-muted-foreground animate-pulse">
+                Loading Tree...
+              </div>
+            ) : documents?.length === 0 ? (
+              // Empty State
+              <div className="px-4 py-2 text-xs text-muted-foreground">
+                No documents yet
+              </div>
+            ) : (
+              // 🟢 THE RENDER: Wrap the map and the drop zone in a Fragment
+              <>
+                {documents?.map((doc: any) => (
+                  <DocumentItem
+                    key={doc.id}
+                    document={doc}
+                    level={0} // Start at level 0
+                  />
+                ))}
+
+                {/* 🟢 THE ROOT DROP ZONE */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsRootDragOver(true); }}
+                  onDragLeave={() => setIsRootDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsRootDragOver(false);
+                    const draggedId = e.dataTransfer.getData("documentId");
+
+                    // Fire the mutation to remove the parentId!
+                    if (draggedId) {
+                      moveDocument({ docId: draggedId, parentId: null });
+                    }
+                  }}
+                  className={cn(
+                    "h-8 w-full mt-2 rounded-md border-2 border-dashed transition-colors flex items-center justify-center text-xs text-muted-foreground",
+                    isRootDragOver ? "border-primary bg-primary/10 text-primary" : "border-transparent"
+                  )}
+                >
+                  {isRootDragOver && "Drop to move to Root"}
+                </div>
+              </>
+            )}
+          </div>
         </SidebarGroup>
 
         {/* PROJECTS LIST */}

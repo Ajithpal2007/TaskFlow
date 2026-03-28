@@ -8,11 +8,13 @@ import { useTask } from "@/hooks/api/use-task";
 
 interface TaskDescriptionProps {
   task: any;
+  updateTask: (data: any) => void;
+  
 }
 
-export function TaskDescription({ task}: TaskDescriptionProps) {
+export function TaskDescription({ task , updateTask}: TaskDescriptionProps) {
 
-  const { updateTask } = useTask(task.id);
+  
 
   const [description, setDescription] = useState("");
   const [isEditing, setIsEditing] = useState(false);

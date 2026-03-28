@@ -42,7 +42,20 @@ export function CreateWorkspaceDialog({ isFirstWorkspace = false }: CreateWorksp
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await apiClient.post("/workspaces", { name: data.name });
+      // 🟢 1. Auto-generate a clean slug from the workspace name
+      const generatedSlug = data.name
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, "") // Remove special characters
+        .replace(/[\s_-]+/g, "-") // Replace spaces with hyphens
+        .replace(/^-+|-+$/g, ""); // Remove trailing hyphens
+
+      // 🟢 2. Send BOTH the name and the generated slug!
+      const response = await apiClient.post("/workspaces", { 
+        name: data.name,
+        slug: generatedSlug 
+      });
+      
       const newWorkspace = response.data?.data; 
 
       if (newWorkspace?.id) {

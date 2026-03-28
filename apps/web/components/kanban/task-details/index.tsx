@@ -26,6 +26,8 @@ export function TaskDetailsDialog() {
   const searchParams = useSearchParams();
   const params = useParams(); // Gets { workspaceId: "..." } from the URL
 
+  
+
   const urlTaskId = searchParams.get("taskId");
   const resolvedTaskId = activeTaskId || urlTaskId;
 

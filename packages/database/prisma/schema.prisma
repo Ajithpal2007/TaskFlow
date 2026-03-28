@@ -59,6 +59,12 @@ enum NotificationType {
   STATUS_CHANGED
 }
 
+enum Visibility {
+  PUBLIC    // Everyone in the Workspace can see it
+  PRIVATE   // Only the Author can see it
+  SHARED    // Author + Specific invited users can see it
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String
@@ -81,6 +87,9 @@ model User {
   sentInvitations WorkspaceInvitation[]
 
   notifications Notification[]
+
+  documents Document[]
+  collaborators DocumentAccess[]
 
   @@unique([email])
   @@map("user")
@@ -147,6 +156,8 @@ model Workspace {
   tags        Tag[] // Shared tags across the workspace
   invitations WorkspaceInvitation[]
 
+  documents Document[]
+
   @@map("workspaces")
 }
 
@@ -185,6 +196,8 @@ model Project {
 
   members ProjectMember[]
   tasks   Task[]
+
+  documents Document[]
 
   @@unique([workspaceId, identifier]) // Identifiers must be unique per workspace
   @@index([workspaceId])
@@ -246,6 +259,7 @@ model Task {
   activityLogs ActivityLog[]
   notifications Notification[]
   attachments Attachment[]
+  linkedDocs TaskDocument[]
 
   // Task Dependencies (e.g., Task A blocks Task B)
   blocking  TaskDependency[] @relation("TaskBlocking")
@@ -380,4 +394,90 @@ model Attachment {
   createdAt DateTime @default(now())
 
   @@index([taskId])
+}
+
+
+// 🟢 THE CORE DOCUMENT MODEL
+model Document {
+  id          String   @id @default(cuid())
+  title       String   @default("Untitled")
+  
+  // 🟢 BlockNote Data Storage
+  // We use Json to store the exact array of blocks BlockNote generates.
+  content     Json?    
+  
+  // 🟢 Notion-style Metadata
+  emoji       String?  // e.g., "🚀"
+  coverImage  String?  // URL to an unsplash image or uploaded file
+  
+  // 🟢 Access & State
+  isArchived  Boolean  @default(false)
+  isLocked    Boolean  @default(false) // Prevents accidental edits (Read-Only mode)
+
+  // 🟢 INFINITE NESTING (The "Notion" Superpower)
+  // This allows a Document to be a "child" of another Document.
+  parentId    String?
+  parent      Document?  @relation("DocumentTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Document[] @relation("DocumentTree")
+
+  // 🟢 Location Hierarchy
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  // projectId is optional so Docs can live globally in a Workspace, OR inside a specific Project
+  projectId   String?    
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // 🟢 Ownership
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id])
+
+  // 🟢 The TaskBridge
+  linkedTasks TaskDocument[]
+
+  visibility  Visibility @default(PUBLIC) 
+  
+  // 🟢 The relationship to track who has been invited
+  collaborators DocumentAccess[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Indexes for lightning-fast queries when opening a workspace or project
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([parentId])
+}
+
+// 🟢 THE BI-DIRECTIONAL BRIDGE (ClickUp Superpower)
+// This junction table allows many Tasks to be linked to many Documents.
+model TaskDocument {
+  id          String   @id @default(cuid())
+  
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+
+  // Prevents linking the exact same task to the exact same doc twice
+  @@unique([taskId, documentId]) 
+  @@index([taskId])
+  @@index([documentId])
+}
+
+model DocumentAccess {
+  id          String   @id @default(cuid())
+  documentId  String
+  userId      String
+  
+  // E.g., "VIEW", "COMMENT", "EDIT"
+  accessLevel String   @default("VIEW") 
+
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // A user can only have one access record per document
+  @@unique([documentId, userId]) 
 }

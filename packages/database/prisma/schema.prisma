@@ -57,12 +57,25 @@ enum NotificationType {
   MENTIONED
   COMMENT_ADDED
   STATUS_CHANGED
+  SYSTEM
 }
 
 enum Visibility {
   PUBLIC    // Everyone in the Workspace can see it
   PRIVATE   // Only the Author can see it
   SHARED    // Author + Specific invited users can see it
+}
+
+enum ChannelType {
+  DIRECT // 1-on-1 private chat
+  GROUP  // Multi-user channel (e.g., #general)
+}
+
+enum ChannelRole {
+  OWNER  // Creator of the channel
+  ADMIN  // Can manage members and delete messages
+  MEMBER // Standard participant
+  GUEST  // Read-only or limited access
 }
 
 model User {
@@ -90,6 +103,10 @@ model User {
 
   documents Document[]
   collaborators DocumentAccess[]
+
+  channelMembers ChannelMember[]
+  messages       Message[]
+  reactions      Reaction[]
 
   @@unique([email])
   @@map("user")
@@ -158,6 +175,8 @@ model Workspace {
 
   documents Document[]
 
+  channels       Channel[]
+
   @@map("workspaces")
 }
 
@@ -198,6 +217,8 @@ model Project {
   tasks   Task[]
 
   documents Document[]
+
+  channels       Channel[]
 
   @@unique([workspaceId, identifier]) // Identifiers must be unique per workspace
   @@index([workspaceId])
@@ -390,10 +411,15 @@ model Attachment {
   
   taskId    String
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  messageId String?
+  message   Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
   
   createdAt DateTime @default(now())
 
   @@index([taskId])
+  @@index([messageId])
+  @@map("attachments")
 }
 
 
@@ -480,4 +506,105 @@ model DocumentAccess {
 
   // A user can only have one access record per document
   @@unique([documentId, userId]) 
+}
+
+
+// ==========================================
+// REAL-TIME MESSAGING & CHAT ENGINE
+// ==========================================
+
+model Channel {
+  id          String      @id @default(cuid())
+  name        String?     // e.g., "engineering-team" (Null for DIRECT chats)
+  description String?     @db.Text
+  type        ChannelType @default(DIRECT)
+  isPrivate   Boolean     @default(false) // RBAC: If true, only invited members can see it
+
+  // Location
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  
+  // Optional: A channel dedicated specifically to a single Project
+  projectId   String?
+  project     Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  members     ChannelMember[]
+  messages    Message[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@map("channels")
+}
+
+model ChannelMember {
+  id        String      @id @default(cuid())
+  role      ChannelRole @default(MEMBER) // RBAC within the specific channel
+  
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  channelId String
+  channel   Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  // For Unread Notifications
+  lastReadAt DateTime   @default(now())
+  joinedAt   DateTime   @default(now())
+
+  @@unique([userId, channelId]) // A user is only in a channel once
+  @@index([channelId])
+  @@map("channel_members")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  
+  // Enterprise States
+  isEdited  Boolean   @default(false)
+  deletedAt DateTime? // Soft-delete: We hide the message but keep the record for compliance
+
+  // Relations
+  channelId String
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  // 🟢 THREADS (Self-Relation)
+  // A message can be a reply to a parent message
+  parentId  String?
+  parent    Message?  @relation("ThreadReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Message[] @relation("ThreadReplies")
+
+  // Features
+  attachments Attachment[]
+  reactions   Reaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt 
+
+  @@index([channelId])
+  @@index([senderId])
+  @@index([parentId]) // Fast lookups for thread expansion
+  @@map("messages")
+}
+
+// 🟢 SLACK-STYLE REACTIONS (e.g., 👍, 👀, 🚀)
+model Reaction {
+  id        String   @id @default(cuid())
+  emoji     String   // Stores the unicode emoji or identifier
+
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, emoji]) // A user can only leave one specific emoji per message
+  @@map("reactions")
 }

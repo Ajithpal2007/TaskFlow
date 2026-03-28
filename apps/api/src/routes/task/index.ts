@@ -47,7 +47,7 @@ export default async function taskRoutes(fastify: FastifyInstance) {
 
   // 3. Update a task (The Drag-and-Drop Handler)
   // PATCH /api/tasks/:taskId
-  fastify.patch(
+ fastify.patch(
     "/:taskId",
     {
       preHandler: requireAuth,
@@ -64,11 +64,29 @@ export default async function taskRoutes(fastify: FastifyInstance) {
         }
 
         const userId = (request as any).user.id;
+        const oldTask = await prisma.task.findUnique({ where: { id: taskId } });
         const updatedTask = await taskService.updateTask(
           taskId,
           userId,
           result.data,
         );
+        if (
+          result.data.assigneeId && 
+          result.data.assigneeId !== oldTask?.assigneeId && 
+          result.data.assigneeId !== userId
+        ) {
+          const assigner = await prisma.user.findUnique({ where: { id: userId }});
+
+          await prisma.notification.create({
+            data: {
+              userId: result.data.assigneeId, // Send it to the new assignee
+              type: "ASSIGNED",
+              taskId: taskId,
+              content: `${assigner?.name || "Someone"} assigned you to "${updatedTask.title}"`,
+            }
+          });
+        }
+
         return { data: updatedTask };
       } catch (error) {
         console.error("Failed to update task:", error);

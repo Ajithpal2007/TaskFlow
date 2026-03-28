@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             replace={router.replace} 
             onSessionChange={() => router.refresh()} 
             Link={CustomLink} // Use the wrapper component
-            // THIS IS THE MISSING PIECE: You must explicitly enable the social buttons
+            
             social={{ providers: ["google", "github"] }} 
         >
             {children}

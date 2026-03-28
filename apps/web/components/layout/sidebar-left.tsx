@@ -4,7 +4,7 @@ import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
-import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2 } from "lucide-react";
+import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle } from "lucide-react";
 import { useNotifications } from "@/hooks/api/use-notifications";
 
 import {
@@ -183,14 +183,28 @@ export function SidebarLeft() {
               </SidebarMenuButton>
             </SidebarMenuItem>
 
+            {/* chat */}
+
+            {activeWorkspaceId && activeWorkspaceId !== "null" && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.includes("/chat")}>
+                  <Link href={`/dashboard/${activeWorkspaceId}/chat`}>
+                    <MessageCircle className="h-4 w-4" />
+                    <span>Chat</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+
+            
             <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={pathname.includes("/trash")}>
-              <Link href={`/dashboard/${activeWorkspaceId}/trash`}>
-                <Trash2 className="h-4 w-4" />
-                <span>Trash</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname.includes("/trash")}>
+                <Link href={`/dashboard/${activeWorkspaceId}/trash`}>
+                  <Trash2 className="h-4 w-4" />
+                  <span>Trash</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
 
 
           </SidebarMenu>

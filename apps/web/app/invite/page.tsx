@@ -1,50 +1,60 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { apiClient } from "@/app/lib/api-client"; // Adjust path if needed
- import { toast } from "sonner"; // Optional: if you use toasts
-
+import { QueryClient, useMutation } from "@tanstack/react-query";
+import { apiClient } from "@/app/lib/api-client";
+import { authClient } from "@/app/lib/auth/client"; // 🟢 Added Better Auth
+import { toast } from "sonner";
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@repo/ui/components/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@repo/ui/components/card";
 import { Loader2, XCircle, CheckCircle2 } from "lucide-react";
+import { useWorkspaceStore } from "../lib/stores/use-workspace-store";
 
-// Next.js requires components using `useSearchParams` to be wrapped in a Suspense boundary
 function InviteContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
+  const queryClient = new QueryClient();
+  const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
 
+  // 🟢 1. Check if the user is actually logged in before they click accept!
+  const { data: session, isPending: isSessionLoading } = authClient.useSession();
 
-  // 🟢 The Mutation to send the token to Fastify
-  const { mutate: acceptInvite, isPending } = useMutation({
+  const { mutate: acceptInvite, isPending: isAccepting } = useMutation({
     mutationFn: async (inviteToken: string) => {
-      // Calls the Fastify route we just built
+      // 🟢 2. Fixed the route path to match your backend exactly
       const { data } = await apiClient.post("/workspaces/invites/accept", { token: inviteToken });
       return data;
     },
     onSuccess: (data) => {
-      // toast.success("Welcome to the team!");
-      // 🟢 Redirect them straight into their new workspace!
+      queryClient.invalidateQueries();
+      if (data.workspaceId) {
+       setActiveWorkspaceId(data.workspaceId);
+    }
+      toast.success("Welcome to the team!");
+      // Redirect them straight into their new workspace!
       router.push(`/dashboard/${data.workspaceId}`);
     },
     onError: (error: any) => {
       console.error("Failed to accept:", error);
-      if (error.response?.status === 401) {
-        
-        router.push("/sign-in")
-      } else {
-        // Optional: Show a toast notification for other errors (like expired tokens)
-        alert(error.response?.data?.message || "Failed to accept invitation");
-      }
+      toast.error(error.response?.data?.message || "Failed to accept invitation");
     },
   });
   
   const handleAccept = () => {
-    if (token) {
-      acceptInvite(token);
+    if (!token) return;
+
+    // 🟢 3. THE MAGIC FIX: If they aren't logged in, send them to sign-in
+    // but append the callbackUrl so Better Auth drops them right back here afterward!
+    if (!session) {
+      toast.info("Please sign in or create an account to accept this invite.");
+      router.push(`/sign-in?callbackUrl=/invite?token=${token}`);
+      return;
     }
+
+    // If they are logged in, fire the mutation!
+    acceptInvite(token);
   };
 
   if (!token) {
@@ -79,9 +89,19 @@ function InviteContent() {
           size="lg" 
           className="w-full text-md h-12" 
           onClick={handleAccept}
-          disabled={isPending}
+          // 🟢 Prevent clicking while checking session OR while accepting
+          disabled={isAccepting || isSessionLoading}
         >
-          {isPending ? "Accepting..." : "Accept Invitation"}
+          {isAccepting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Accepting...
+            </>
+          ) : isSessionLoading ? (
+            "Loading..."
+          ) : (
+             "Accept Invitation"
+          )}
         </Button>
       </CardFooter>
     </Card>

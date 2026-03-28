@@ -9,21 +9,23 @@ import { Loader2 } from "lucide-react"; // 🟢 Added a professional spinner
 
 export default function DashboardRootPage() {
   const router = useRouter();
-  
+
   // 1. Fetch data
   const { data: workspaces, isLoading, isSuccess } = useWorkspaces();
   const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
 
   // 2. The Redirect Engine
   useEffect(() => {
-    // Only run the redirect logic AFTER the network request successfully finishes
     if (isSuccess && workspaces) {
       if (workspaces.length > 0) {
-        // Find their last active workspace, or default to the very first one
-        const targetWorkspace = workspaces.find((w: any) => w.id === activeWorkspaceId) || workspaces[0];
-        
-        // 🟢 Route them into the workspace! (Your workspace layout should handle routing to a specific project)
-        router.push(`/dashboard/${targetWorkspace.id}`);
+        // Safely find the workspace, fallback to the first one safely
+        const targetWorkspace = workspaces.find((w: any) => w.id === activeWorkspaceId);
+        const finalId = targetWorkspace?.id || workspaces[0]?.id;
+
+        // ONLY redirect if we actually have a valid string ID!
+        if (finalId && finalId !== "null" && finalId !== "undefined") {
+          router.replace(`/dashboard/${finalId}`);
+        }
       }
     }
   }, [workspaces, isSuccess, activeWorkspaceId, router]);
@@ -52,7 +54,7 @@ export default function DashboardRootPage() {
           To get started, you need to create a secure workspace for your team's projects and tasks.
         </p>
       </div>
-      
+
       <div className="mt-4">
         <CreateWorkspaceDialog isFirstWorkspace={true} />
       </div>

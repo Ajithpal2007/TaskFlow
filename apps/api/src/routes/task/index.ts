@@ -6,7 +6,8 @@ import {
 } from "@repo/validators";
 import { taskService } from "../../services/task.service.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { prisma,NotificationType } from "@repo/database";
+import { prisma,NotificationType, PrismaClient } from "@repo/database";
+
 
 export default async function taskRoutes(fastify: FastifyInstance) {
   // 1. Get all tasks for a specific project

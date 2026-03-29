@@ -408,8 +408,8 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
     "/:workspaceId/members/:memberId",
     {
       preHandler: [
-        requireAuth, 
-        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]) 
+        requireAuth,
+        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]),
       ],
     },
     async (request, reply) => {
@@ -417,9 +417,13 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
       const { role } = request.body as { role: WorkspaceRole };
 
       // Make sure they aren't trying to downgrade the OWNER
-      const targetMember = await prisma.workspaceMember.findUnique({ where: { id: memberId } });
+      const targetMember = await prisma.workspaceMember.findUnique({
+        where: { id: memberId },
+      });
       if (targetMember?.role === WorkspaceRole.OWNER) {
-        return reply.status(403).send({ error: "Cannot change the role of the Workspace Owner." });
+        return reply
+          .status(403)
+          .send({ error: "Cannot change the role of the Workspace Owner." });
       }
 
       const updatedMember = await prisma.workspaceMember.update({
@@ -428,7 +432,7 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
       });
 
       return reply.send({ data: updatedMember });
-    }
+    },
   );
 
   // 🟢 REMOVE A USER FROM WORKSPACE
@@ -436,17 +440,21 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
     "/:workspaceId/members/:memberId",
     {
       preHandler: [
-        requireAuth, 
-        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]) 
+        requireAuth,
+        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]),
       ],
     },
     async (request, reply) => {
       const { memberId } = request.params as { memberId: string };
 
       // Prevent kicking the owner
-      const targetMember = await prisma.workspaceMember.findUnique({ where: { id: memberId } });
+      const targetMember = await prisma.workspaceMember.findUnique({
+        where: { id: memberId },
+      });
       if (targetMember?.role === WorkspaceRole.OWNER) {
-        return reply.status(403).send({ error: "Cannot remove the Workspace Owner." });
+        return reply
+          .status(403)
+          .send({ error: "Cannot remove the Workspace Owner." });
       }
 
       await prisma.workspaceMember.delete({
@@ -454,7 +462,7 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
       });
 
       return reply.send({ success: true });
-    }
+    },
   );
 
   // 🟢 GET ALL USERS IN A WORKSPACE
@@ -468,15 +476,15 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
         // 1. Find all memberships for this workspace and include the user details
         const members = await prisma.workspaceMember.findMany({
           where: { workspaceId },
-          include: { 
+          include: {
             user: {
               select: {
                 id: true,
                 name: true,
                 email: true,
                 image: true,
-              }
-            } 
+              },
+            },
           },
         });
 
@@ -486,20 +494,21 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
 
         return reply.send({ data: users });
       } catch (error) {
-        return reply.status(500).send({ message: "Failed to fetch workspace users", error });
+        return reply
+          .status(500)
+          .send({ message: "Failed to fetch workspace users", error });
       }
-    }
+    },
   );
 
-
-// 🔴 DELETE /api/workspaces/:workspaceId
+  // 🔴 DELETE /api/workspaces/:workspaceId
   fastify.delete(
     "/:workspaceId",
     {
       preHandler: [
         requireAuth,
         // Ensure you have this middleware created for Workspace roles!
-        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]) 
+        requireWorkspaceRole([WorkspaceRole.OWNER, WorkspaceRole.ADMIN]),
       ],
     },
     async (request, reply) => {
@@ -510,17 +519,17 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
           where: { id: workspaceId },
         });
 
-        return reply.code(200).send({ 
-          message: "Workspace deleted successfully", 
-          deletedWorkspaceId: workspaceId 
+        return reply.code(200).send({
+          message: "Workspace deleted successfully",
+          deletedWorkspaceId: workspaceId,
         });
       } catch (error) {
-        return reply.code(500).send({ 
-          message: "Failed to delete workspace.", 
-          error 
+        return reply.code(500).send({
+          message: "Failed to delete workspace.",
+          error,
         });
       }
-    }
+    },
   );
 
   // Add this to your Fastify document routes
@@ -529,16 +538,48 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
     { preHandler: [requireAuth] },
     async (request, reply) => {
       const { workspaceId } = request.params as { workspaceId: string };
-      
+
       const docs = await prisma.document.findMany({
         where: { workspaceId },
         orderBy: { updatedAt: "desc" },
-        select: { id: true, title: true, updatedAt: true } // Don't fetch the heavy JSON content here!
+        select: { id: true, title: true, updatedAt: true }, // Don't fetch the heavy JSON content here!
       });
-      
+
       return reply.code(200).send({ data: docs });
-    }
+    },
   );
 
+  // 🟢 GET WORKSPACE ACTIVITY LOGS
+  fastify.get(
+    "/workspaces/:workspaceId/activity",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
+
+      try {
+        const logs = await prisma.activityLog.findMany({
+          where: {
+            task: {
+              project: {
+                workspaceId: workspaceId,
+              },
+            },
+          },
+          include: {
+            actor: { select: { id: true, name: true, image: true } },
+            task: { select: { id: true, title: true } },
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+        });
+
+        return reply.send({ data: logs });
+      } catch (error) {
+        return reply
+          .status(500)
+          .send({ error: "Failed to fetch activity logs" });
+      }
+    },
+  );
 }
 

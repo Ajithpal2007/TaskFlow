@@ -1,77 +1,83 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Send, Hash, User, CheckSquare } from "lucide-react";
+import { Send, Hash, User, CheckSquare, Loader2, X, Paperclip, Image as ImageIcon } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import { apiClient } from "@/app/lib/api-client";
+import { useParams } from "next/navigation";
+import { useUploadThing } from "@/app/lib/uploadthing";
 
 interface ChatInputProps {
   workspaceId: string;
-  onSendMessage: (content: string) => void;
+  // 🟢 1. Note the fileUrls array to support multiple files!
+  onSendMessage: (content: string, fileUrls?: string[]) => Promise<void> | void; 
   onTyping: () => void;
 }
 
 export function ChatInput({ workspaceId, onSendMessage, onTyping }: ChatInputProps) {
+  // --- MASTER STATE ---
   const [text, setText] = useState("");
-  
-  // Mention Menu State
+  const [isSending, setIsSending] = useState(false);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const params = useParams();
+  const channelId = params.channelId as string;
+
+  // --- MENTION STATE ---
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(0); // 🟢 NEW: Tracks keyboard selection
-  
-  const inputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null); // For auto-scrolling the menu
+  const [selectedIndex, setSelectedIndex] = useState(0); 
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setText(value);
-    onTyping();
+  // --- ATTACHMENT STATE ---
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { startUpload, isUploading } = useUploadThing("messageAttachment");
 
-    const cursorPosition = e.target.selectionStart || 0;
-    const textBeforeCursor = value.slice(0, cursorPosition);
-    const words = textBeforeCursor.split(" ");
-    const lastWord = words[words.length - 1];
 
-    if (lastWord.startsWith("@")) {
-      setMentionQuery(lastWord.slice(1));
+  // 🟢 2. DRAFTS HOOK
+  useEffect(() => {
+    if (!channelId) return;
+    const savedDraft = localStorage.getItem(`draft-${channelId}`);
+    if (savedDraft) {
+      setText(savedDraft);
     } else {
-      setMentionQuery(null);
+      setText(""); 
     }
-  };
+    inputRef.current?.focus();
+  }, [channelId]);
 
+
+  // 🟢 3. MENTIONS LOGIC
   useEffect(() => {
     if (mentionQuery === null) return;
-
     const fetchResults = async () => {
       setIsSearching(true);
       try {
         const res = await apiClient.get(`/search/mentions?workspaceId=${workspaceId}&q=${mentionQuery}`);
         setMentionResults(res.data.data);
-        setSelectedIndex(0); // 🟢 Reset selection to top when results change
+        setSelectedIndex(0); 
       } catch (error) {
         console.error("Search failed", error);
       } finally {
         setIsSearching(false);
       }
     };
-
     const delayDebounceFn = setTimeout(() => fetchResults(), 300);
     return () => clearTimeout(delayDebounceFn);
   }, [mentionQuery, workspaceId]);
 
   const handleSelectMention = (item: any) => {
     const words = text.split(" ");
-    words.pop(); 
+    words.pop();
     const mentionString = `@[${item.title}](${item.type}:${item.id}) `;
     setText(words.join(" ") + (words.length > 0 ? " " : "") + mentionString);
-    setMentionQuery(null); 
-    inputRef.current?.focus(); 
+    setMentionQuery(null);
+    inputRef.current?.focus();
   };
 
-  // 🟢 NEW: THE KEYBOARD INTERCEPTOR
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Only hijack the keys IF the mention menu is open
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (mentionQuery !== null && mentionResults.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -83,24 +89,93 @@ export function ChatInput({ workspaceId, onSendMessage, onTyping }: ChatInputPro
         e.preventDefault();
         handleSelectMention(mentionResults[selectedIndex]);
       } else if (e.key === "Escape") {
-        setMentionQuery(null); // Let them cancel out of the menu
+        setMentionQuery(null);
       }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Prevent sending if they are just trying to select a mention with Enter!
-    if (mentionQuery !== null) return; 
+  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setText(val);
+    onTyping();
     
-    if (!text.trim()) return;
-    onSendMessage(text);
-    setText("");
-    setMentionQuery(null);
+    // Save draft instantly
+    if (val.trim()) {
+      localStorage.setItem(`draft-${channelId}`, val);
+    } else {
+      localStorage.removeItem(`draft-${channelId}`);
+    }
+
+    // Auto-resize magic
+    e.target.style.height = "auto";
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+
+    // Mention trigger detection
+    const cursorPosition = e.target.selectionStart || 0;
+    const textBeforeCursor = val.slice(0, cursorPosition);
+    const words = textBeforeCursor.split(" ");
+    const lastWord = words[words.length - 1];
+
+    if (lastWord.startsWith("@")) {
+      setMentionQuery(lastWord.slice(1));
+    } else {
+      setMentionQuery(null);
+    }
   };
 
+
+  // 🟢 4. ATTACHMENT LOGIC (Local Preview Only)
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setPendingFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeFile = (indexToRemove: number) => {
+    setPendingFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+
+  // 🟢 5. THE MASTER SUBMIT FUNCTION
+  const handleMasterSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    
+    // Block sending if empty or already uploading
+    if ((!text.trim() && pendingFiles.length === 0) || isSending || isUploading) return;
+
+    setIsSending(true);
+    try {
+      let uploadedUrls: string[] = [];
+
+      // Step A: Upload files to UploadThing ONLY when they click send
+      if (pendingFiles.length > 0) {
+        const uploadResponse = await startUpload(pendingFiles);
+        if (uploadResponse) {
+          uploadedUrls = uploadResponse.map((file) => file.url);
+        }
+      }
+
+      // Step B: Send text and image URLs to your backend
+      await onSendMessage(text, uploadedUrls.length > 0 ? uploadedUrls : undefined);
+      
+      // Step C: Cleanup everything on success!
+      setText(""); 
+      setPendingFiles([]); // Clear images
+      localStorage.removeItem(`draft-${channelId}`); // Clear draft
+      if (inputRef.current) inputRef.current.style.height = "auto"; // Reset height
+
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // ... YOUR RETURN STATEMENT STARTS HERE ...
   return (
-    <div className="relative p-4 bg-background border-t">
+    <div className="relative px-6 pt-4 pb-0 bg-background border-t shrink-0">
+      
       {/* 🟢 THE FLOATING MENTION MENU */}
       {mentionQuery !== null && (
         <div ref={menuRef} className="absolute bottom-full left-4 mb-2 w-80 max-h-64 overflow-y-auto bg-popover border rounded-lg shadow-2xl z-50 animate-in slide-in-from-bottom-2">
@@ -118,10 +193,8 @@ export function ChatInput({ workspaceId, onSendMessage, onTyping }: ChatInputPro
                   key={idx}
                   type="button"
                   onClick={() => handleSelectMention(item)}
-                  onMouseEnter={() => setSelectedIndex(idx)} // Allow mouse to override keyboard state
-                  className={`flex items-center gap-3 p-2 text-left rounded-md transition-colors ${
-                    idx === selectedIndex ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-                  }`}
+                  onMouseEnter={() => setSelectedIndex(idx)} 
+                  className={`flex items-center gap-3 p-2 text-left rounded-md transition-colors ${idx === selectedIndex ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
                 >
                   <div className={`h-6 w-6 shrink-0 rounded border flex items-center justify-center overflow-hidden ${idx === selectedIndex ? "bg-primary-foreground/20 border-transparent" : "bg-background"}`}>
                     {item.type === "user" && item.avatar ? (
@@ -147,21 +220,98 @@ export function ChatInput({ workspaceId, onSendMessage, onTyping }: ChatInputPro
         </div>
       )}
 
-      {/* 🟢 THE CHAT INPUT BOX */}
-      <form onSubmit={handleSubmit} className="flex gap-2 relative">
-        <input
-          ref={inputRef}
-          type="text"
-          value={text}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown} // 🟢 Added the listener here!
-          placeholder="Type a message... (Use @ to mention tasks or people)"
-          className="flex-1 bg-muted rounded-lg px-4 py-3 text-sm outline-none border border-transparent focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-          autoComplete="off"
-        />
-        <Button type="submit" disabled={!text.trim() || mentionQuery !== null} className="rounded-lg h-auto py-3">
-          <Send size={16} />
-        </Button>
+      {/* 🟢 THE NEW MULTI-FILE FORM */}
+      <form onSubmit={handleMasterSubmit} className="flex flex-col gap-2 relative">
+        
+        {/* 🟢 MULTIPLE FILE PREVIEW ROW */}
+        {pendingFiles.length > 0 && (
+          <div className="flex flex-wrap gap-3 p-3 bg-muted/40 border rounded-lg shadow-sm animate-in fade-in slide-in-from-bottom-1 w-max max-w-full overflow-x-auto">
+            {pendingFiles.map((file, idx) => {
+              // Create a temporary local URL for instant preview!
+              const objectUrl = URL.createObjectURL(file);
+              const isImage = file.type.startsWith("image/");
+
+              return (
+                <div key={idx} className="relative h-16 w-16 bg-background rounded-md border flex items-center justify-center overflow-hidden shrink-0 group">
+                  {isImage ? (
+                    <img src={objectUrl} alt="Preview" className="h-full w-full object-cover" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  )}
+                  
+                  {/* Remove Button (Hides while uploading) */}
+                  {!isUploading && (
+                    <button  
+                      title="Remove file"
+                      type="button" 
+                      onClick={() => removeFile(idx)} 
+                      className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                  
+                  {/* Loading overlay for each image */}
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-background/50 flex items-center justify-center backdrop-blur-[1px]">
+                      <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 🟢 THE INPUT ROW */}
+        <div className="flex gap-2 items-end">
+          <textarea
+            ref={inputRef as any}
+            value={text}
+            onChange={handleTextareaInput}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleMasterSubmit(e);
+              }
+              handleKeyDown(e as any); 
+            }}
+            placeholder="Type a message... (Use @ to mention tasks or people)"
+            className="flex-1 bg-muted rounded-lg px-4 py-3 text-sm outline-none border border-transparent focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none overflow-y-auto min-h-[44px] max-h-[150px]"
+            rows={1}
+            disabled={isUploading}
+          />
+
+          {/* 🟢 HIDDEN FILE INPUT (Notice the 'multiple' attribute!) */}
+          <input  
+            title="Attach files"
+            type="file" 
+            multiple 
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            className="hidden" 
+            accept="image/*,application/pdf"
+          />
+          <Button 
+            type="button"
+            variant="ghost" 
+            className="rounded-lg h-11 w-11 shrink-0 p-0 text-muted-foreground hover:text-foreground bg-muted hover:bg-muted/80"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            title="Attach files"
+          >
+            <Paperclip size={18} />
+          </Button>
+
+          {/* 🟢 SEND BUTTON */}
+          <Button 
+            type="submit" 
+            disabled={(!text.trim() && pendingFiles.length === 0) || mentionQuery !== null || isUploading || isSending} 
+            className="rounded-lg h-11 w-11 shrink-0 p-0"
+          >
+            {isUploading || isSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+          </Button>
+        </div>
       </form>
     </div>
   );

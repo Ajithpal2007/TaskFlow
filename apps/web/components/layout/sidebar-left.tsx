@@ -4,7 +4,7 @@ import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
-import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle } from "lucide-react";
+import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle,Activity } from "lucide-react";
 import { useNotifications } from "@/hooks/api/use-notifications";
 
 import {
@@ -44,6 +44,8 @@ import { useMoveDocument } from "@/hooks/api/use-move-document";
 import { useState } from "react";
 import { cn } from "@repo/ui/src/lib/utils";
 
+import ActivityLogPage from "../../app/dashboard/[workspaceId]/activity/page";
+ 
 export function SidebarLeft() {
   const router = useRouter();
   const pathname = usePathname();
@@ -196,7 +198,20 @@ export function SidebarLeft() {
               </SidebarMenuItem>
             )}
 
-            
+
+            {/* 🟢 NEW: Activity Log Link */}
+            {/* activeWorkspaceId && activeWorkspaceId !== "null" && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.includes("/activity")}>
+                  <Link href={`/dashboard/${activeWorkspaceId}/activity`}>
+                    <Activity className="h-4 w-4" />
+                    <span>Activity</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )*/}
+
+
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname.includes("/trash")}>
                 <Link href={`/dashboard/${activeWorkspaceId}/trash`}>

@@ -28,6 +28,9 @@ interface UIState {
 
   openTaskDetails: (taskId: string) => void;
   closeTaskDetails: () => void;
+
+  activeThreadId: string | null;
+  setActiveThreadId: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -40,6 +43,8 @@ export const useUIStore = create<UIState>((set) => ({
   isTaskDetailsModalOpen: false,
   activeTaskId: null,
   isTaskDetailsOpen: false,
+  
+  activeThreadId: null,
 
 
   //  ACTIONS
@@ -59,4 +64,8 @@ export const useUIStore = create<UIState>((set) => ({
   isSearchOpen: false,
   setSearchOpen: (open) => set({ isSearchOpen: open }),
   toggleSearch: () => set((state) => ({ isSearchOpen: !state.isSearchOpen })),
+
+
+
+  setActiveThreadId: (id) => set({ activeThreadId: id }),
 }));

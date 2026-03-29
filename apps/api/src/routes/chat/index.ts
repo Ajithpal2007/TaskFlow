@@ -212,15 +212,17 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
       const userId = (request as any).user.id;
       
       // 1. EXTRACT FIRST: Grab the data from the request body BEFORE using it!
-      const { channelId, content, parentId } = request.body as { 
+      const { channelId, content, parentId,fileUrls } = request.body as { 
         channelId: string; 
         content: string; 
-        parentId?: string 
+        parentId?: string;
+        fileUrls?: string[];
+
       };
 
       // 2. VALIDATE: Ensure the required fields exist
-      if (!channelId || !content) {
-        return reply.code(400).send({ message: "Channel ID and content are required" });
+     if (!channelId || (!content && (!fileUrls || fileUrls.length === 0))) {
+        return reply.code(400).send({ message: "Channel ID and either content or files are required" });
       }
 
       try {
@@ -246,6 +248,7 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
             channelId,
             senderId: userId,
             parentId: parentId || null,
+            fileUrls: fileUrls || [],
           },
           include: {
             sender: { select: { id: true, name: true, image: true } },
@@ -305,6 +308,89 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
   );
+
+  // 🟢 GET A SPECIFIC THREAD
+  fastify.get(
+    "/messages/:messageId/thread",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { messageId } = request.params as { messageId: string };
+
+      try {
+        // 1. Get the original message
+        const parent = await prisma.message.findUnique({
+          where: { id: messageId },
+          include: { sender: true },
+        });
+
+        // 2. Get all the replies
+        const replies = await prisma.message.findMany({
+          where: { parentId: messageId },
+          include: { sender: true },
+          orderBy: { createdAt: "asc" }, // Oldest replies first
+        });
+
+        return reply.send({ data: { parent, replies } });
+      } catch (error) {
+        return reply.status(500).send({ error: "Failed to fetch thread" });
+      }
+    }
+  );
+
+  // POST /api/chat/messages/:messageId/reactions
+  fastify.post(
+    "/messages/:messageId/reactions",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const userId = (request as any).user.id;
+      const { messageId } = request.params as { messageId: string };
+      const { emoji, channelId } = request.body as { emoji: string; channelId: string };
+
+      try {
+        // 1. Check if the reaction already exists
+        const existingReaction = await prisma.reaction.findUnique({
+          where: {
+            messageId_userId_emoji: { messageId, userId, emoji },
+          },
+        });
+
+        let action = "add";
+        let reactionRecord;
+
+        if (existingReaction) {
+          // 2. If it exists, REMOVE it (Toggle Off)
+          await prisma.reaction.delete({
+            where: { id: existingReaction.id },
+          });
+          action = "remove";
+        } else {
+          // 3. If it doesn't exist, CREATE it (Toggle On)
+          reactionRecord = await prisma.reaction.create({
+            data: { messageId, userId, emoji },
+            include: { user: { select: { id: true, name: true } } },
+          });
+        }
+
+        // 4. Broadcast the update to everyone in the channel
+        chatHub.broadcast(channelId, {
+          type: "REACTION_TOGGLED",
+          data: {
+            messageId,
+            emoji,
+            userId,
+            action,
+            reaction: reactionRecord, // Null if removed, full object if added
+          },
+        });
+
+        return reply.code(200).send({ success: true, action });
+      } catch (error) {
+        console.error(error);
+        return reply.code(500).send({ message: "Failed to toggle reaction" });
+      }
+    }
+  );
+
 };
 
 export default chatRoutes;

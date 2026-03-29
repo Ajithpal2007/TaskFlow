@@ -61,7 +61,7 @@ export default function WorkspaceLayout({
     <SidebarProvider defaultOpen={true}>
       <SidebarLeft />
 
-      <SidebarInset className="min-w-0 bg-background">
+      <SidebarInset className="min-w-0 bg-background flex flex-col h-screen overflow-hidden ">
         {/* HEADER - Locks to the top */}
         {/* HEADER - Locks to the top */}
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur px-4">
@@ -94,7 +94,9 @@ export default function WorkspaceLayout({
           </div>
         </header>
         {/* PAGE CONTENT (Either the Workspace Home or the Kanban Board) */}
-        {children}
+       <main className="flex-1 flex flex-col overflow-hidden relative">
+          {children}
+        </main>
 
         {/* HIDDEN GLOBAL DIALOGS */}
         <CreateProjectDialog  />

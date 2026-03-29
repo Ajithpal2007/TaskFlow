@@ -12,3 +12,17 @@ export function useTaskActivity(taskId?: string) {
     enabled: !!taskId,
   });
 }
+
+
+export function useWorkspaceActivity(workspaceId?: string) {
+  return useQuery({
+    queryKey: ["workspace-activity", workspaceId],
+    queryFn: async () => {
+      if (!workspaceId) return [];
+      const response = await apiClient.get(`/workspaces/${workspaceId}/activity`);
+      return response.data.data;
+    },
+    enabled: !!workspaceId,
+    refetchInterval: 10000, // Auto-refresh the global feed every 10s
+  });
+}

@@ -49,30 +49,24 @@ export function ChatSidebar() {
   const directMessages = channels.filter(c => c.type === "DIRECT");
 
   return (
-    <div className="w-64 border-r bg-background/50 flex flex-col h-[calc(100vh-theme(spacing.16))] lg:h-screen">
-      {/* HEADER */}
-      <div className="p-4 flex items-center justify-between border-b">
-        <h2 className="font-semibold text-lg">Chat</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsModalOpen(true)} // 🟢 Open the modal
-          className="h-8 w-8 rounded-full bg-blue-500 text-white hover:bg-blue-600"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+    <div className="w-64 min-w-[256px] flex-shrink-0 border-r bg-background/50 flex flex-col h-[calc(100vh-theme(spacing.16))] lg:h-screen overflow-hidden">
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-6">
+      {/* HEADER */}
+     
+      {/* HEADER */}
+      <div className="p-4 flex items-center justify-between border-b shrink-0">
+        <h2 className="font-semibold text-lg">Chat</h2>
+      </div>
+     <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-6">
         {/* STATIC LINKS */}
-        <div className="space-y-0.5">
+        {/*<div className="space-y-0.5">
           <Link href={`/dashboard/${workspaceId}/chat/replies`} className="flex items-center gap-3 px-2 py-1.5 text-sm font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
             <MessageSquare className="h-4 w-4" /> Threads
           </Link>
           <Link href={`/dashboard/${workspaceId}/chat/activity`} className="flex items-center gap-3 px-2 py-1.5 text-sm font-medium rounded-md text-muted-foreground hover:bg-muted hover:text-primary transition-colors">
             <Activity className="h-4 w-4" /> Mentions & Reactions
           </Link>
-        </div>
+        </div>*/}
 
         {isLoading ? (
           <div className="px-4 text-xs text-muted-foreground animate-pulse">Loading channels...</div>
@@ -126,12 +120,23 @@ export function ChatSidebar() {
           </>
         )}
       </div>
-      {/* At the very bottom, right before the closing </div> */}
+      {/* 🟢 THE NEW FIXED FOOTER */}
+      <div className="p-4 border-t bg-background shrink-0 mt-auto z-10">
+        <Button
+          onClick={() => setIsModalOpen(true)}
+          className="w-full flex items-center gap-2 bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
+        >
+          <Plus className="h-4 w-4 shrink-0" />
+          <span>New Chat</span>
+        </Button>
+      </div>
+
+      {/* Your Modal stays at the very bottom */}
       <NewChatModal
         workspaceId={workspaceId}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={fetchChannels} // 🟢 Refreshes the sidebar instantly!
+        onSuccess={fetchChannels} 
       />
     </div>
   );

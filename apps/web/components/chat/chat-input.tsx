@@ -138,40 +138,50 @@ export function ChatInput({ workspaceId, onSendMessage, onTyping }: ChatInputPro
 
 
   // 🟢 5. THE MASTER SUBMIT FUNCTION
+  // 🟢 5. THE MASTER SUBMIT FUNCTION (Optimistic UI Upgraded)
   const handleMasterSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     
     // Block sending if empty or already uploading
     if ((!text.trim() && pendingFiles.length === 0) || isSending || isUploading) return;
 
+    // 🟢 STEP 1: CAPTURE THE CURRENT STATE
+    const textToSend = text.trim();
+    const filesToSend = [...pendingFiles];
+
+    // 🟢 STEP 2: CLEAR THE UI INSTANTLY (0-Latency Feel)
+    setText(""); 
+    setPendingFiles([]); 
+    localStorage.removeItem(`draft-${channelId}`); 
+    if (inputRef.current) inputRef.current.style.height = "auto"; 
+    setMentionQuery(null); // Just in case a menu was open
+
+    // 🟢 STEP 3: PROCESS THE UPLOAD & SEND IN THE BACKGROUND
     setIsSending(true);
     try {
       let uploadedUrls: string[] = [];
 
-      // Step A: Upload files to UploadThing ONLY when they click send
-      if (pendingFiles.length > 0) {
-        const uploadResponse = await startUpload(pendingFiles);
+      // If they attached files, upload them first
+      if (filesToSend.length > 0) {
+        const uploadResponse = await startUpload(filesToSend);
         if (uploadResponse) {
           uploadedUrls = uploadResponse.map((file) => file.url);
         }
       }
 
-      // Step B: Send text and image URLs to your backend
-      await onSendMessage(text, uploadedUrls.length > 0 ? uploadedUrls : undefined);
-      
-      // Step C: Cleanup everything on success!
-      setText(""); 
-      setPendingFiles([]); // Clear images
-      localStorage.removeItem(`draft-${channelId}`); // Clear draft
-      if (inputRef.current) inputRef.current.style.height = "auto"; // Reset height
+      // Send the captured text and URLs to the backend
+      await onSendMessage(textToSend, uploadedUrls.length > 0 ? uploadedUrls : undefined);
 
     } catch (error) {
       console.error("Failed to send message:", error);
+      // 🟢 STEP 4: ROLLBACK ON ERROR (If it fails, give them their text back!)
+      setText(textToSend);
+      setPendingFiles(filesToSend);
     } finally {
       setIsSending(false);
     }
   };
-
+  
   // ... YOUR RETURN STATEMENT STARTS HERE ...
   return (
     <div className="relative px-6 pt-4 pb-0 bg-background border-t shrink-0">

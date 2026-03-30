@@ -391,6 +391,44 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+
+fastify.get("/channels/:channelId", async (request, reply) => {
+  const { channelId } = request.params as { channelId: string };
+  const userId = (request as any).user.id; // Get the logged-in user
+
+  // 1. Fetch the channel and INCLUDE the members
+  const channel = await prisma.channel.findUnique({
+    where: { id: channelId },
+    include: {
+      members: {
+        include: { user: true } // Bring in the user details
+      }
+    }
+  });
+
+  if (!channel) return reply.code(404).send({ message: "Not Found" });
+
+  // 🟢 2. SMART NAME COMPUTATION
+  let computedName = channel.name;
+
+  // If it's a DM, find the OTHER person in the chat and use their name!
+  if (channel.type === "DIRECT" || !channel.name) {
+    const otherMember = channel.members.find(m => m.userId !== userId);
+    if (otherMember) {
+      computedName = otherMember.user.name; 
+    } else {
+      computedName = "Just You"; // In case it's a DM with yourself
+    }
+  }
+
+  // 3. Send the formatted data back to React
+  return { 
+    data: { 
+      ...channel, 
+      name: computedName // Override the null name with the real user's name!
+    } 
+  };
+});
 };
 
 export default chatRoutes;

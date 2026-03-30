@@ -9,7 +9,7 @@ import { TaskDetailsDialog } from "@/components/kanban/task-details/index";
 import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
-import { Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 
 import { useAuth } from "@/hooks/api/use-auth";
 import { useRouter } from "next/navigation";
@@ -24,10 +24,10 @@ export default function WorkspaceLayout({
   params: { workspaceId: string };
 }) {
   const router = useRouter();
-  
+
   // 1. Fetch the user's auth status
   const { isAuthenticated, isLoading: isAuthLoading, isError } = useAuth();
-  
+
   // 2. Fetch Workspaces (only runs if they are logged in)
   const { data: workspaces } = useWorkspaces();
   const activeWorkspace = workspaces?.find((w: any) => w.id === params.workspaceId);
@@ -36,7 +36,7 @@ export default function WorkspaceLayout({
   useEffect(() => {
     // If the check is done, and they aren't authenticated (or there was an error)
     if (!isAuthLoading && (!isAuthenticated || isError)) {
-      router.push("/"); 
+      router.push("/");
     }
   }, [isAuthLoading, isAuthenticated, isError, router]);
 
@@ -54,7 +54,7 @@ export default function WorkspaceLayout({
 
   // 5. The Final Security Block (Don't render the sidebar if they are being redirected)
   if (!isAuthenticated) {
-    return null; 
+    return null;
   }
 
   return (
@@ -63,11 +63,11 @@ export default function WorkspaceLayout({
 
       <SidebarInset className="min-w-0 bg-background flex flex-col h-screen overflow-hidden ">
         {/* HEADER - Locks to the top */}
-        {/* HEADER - Locks to the top */}
-        <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur px-4">
+
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="h-4 w-px bg-border mx-2" />
-          
+
           {/* 🟢 LEFT SIDE: Breadcrumbs */}
           <div className="font-semibold text-sm text-muted-foreground">
             {activeWorkspace ? activeWorkspace.name : "Loading Workspace..."} / Project Management
@@ -94,12 +94,19 @@ export default function WorkspaceLayout({
           </div>
         </header>
         {/* PAGE CONTENT (Either the Workspace Home or the Kanban Board) */}
-       <main className="flex-1 flex flex-col overflow-hidden relative">
-          {children}
+        <main className="flex-1 flex flex-col overflow-hidden relative min-h-0">
+          {isAuthLoading ? (
+            // 🟢 Show loader INSIDE the main area, so the Sidebar stays steady!
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="animate-spin" />
+            </div>
+          ) : (
+            children
+          )}
         </main>
 
         {/* HIDDEN GLOBAL DIALOGS */}
-        <CreateProjectDialog  />
+        <CreateProjectDialog />
         <TaskDetailsDialog />
         <GlobalSearch />
       </SidebarInset>

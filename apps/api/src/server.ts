@@ -115,6 +115,10 @@ export async function buildServer() {
   await fastify.register(import("./routes/chat/index.js"), {
   prefix: "/api/chat",
 });
+
+  await fastify.register(import("./routes/calls/index.js"), {
+    prefix: "/api/calls",
+  });
  
 
   return fastify;

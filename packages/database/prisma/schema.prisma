@@ -61,21 +61,40 @@ enum NotificationType {
 }
 
 enum Visibility {
-  PUBLIC    // Everyone in the Workspace can see it
-  PRIVATE   // Only the Author can see it
-  SHARED    // Author + Specific invited users can see it
+  PUBLIC // Everyone in the Workspace can see it
+  PRIVATE // Only the Author can see it
+  SHARED // Author + Specific invited users can see it
 }
 
 enum ChannelType {
   DIRECT // 1-on-1 private chat
-  GROUP  // Multi-user channel (e.g., #general)
+  GROUP // Multi-user channel (e.g., #general)
 }
 
 enum ChannelRole {
-  OWNER  // Creator of the channel
-  ADMIN  // Can manage members and delete messages
+  OWNER // Creator of the channel
+  ADMIN // Can manage members and delete messages
   MEMBER // Standard participant
-  GUEST  // Read-only or limited access
+  GUEST // Read-only or limited access
+}
+
+enum CallType {
+  HUDDLE // Ad-hoc, instant voice/video tied to a Channel or DM
+  SCHEDULED // Formal, Zoom-style meeting tied to a Workspace
+}
+
+enum CallStatus {
+  SCHEDULED // Future meeting, waiting to start
+  ONGOING // LiveKit room is currently active
+  ENDED // Call is permanently closed
+  CANCELLED // Scheduled meeting was cancelled
+}
+
+enum CallRole {
+  HOST // Has admin rights (mute others, kick, record)
+  CO_HOST // Helper admin
+  PARTICIPANT // Standard user who can share audio/video/screen
+  GUEST // View-only (Webinar style)
 }
 
 model User {
@@ -90,23 +109,27 @@ model User {
   accounts      Account[]
 
   // App Relations
-  workspaces      WorkspaceMember[]
-  projects        ProjectMember[]
-  createdTasks    Task[]                @relation("CreatedTasks")
-  assignedTasks   Task[]                @relation("AssignedTasks")
-  watchedTasks Task[] @relation("TaskWatchers")
+  workspaces    WorkspaceMember[]
+  projects      ProjectMember[]
+  createdTasks  Task[]            @relation("CreatedTasks")
+  assignedTasks Task[]            @relation("AssignedTasks")
+  watchedTasks  Task[]            @relation("TaskWatchers")
+
   comments        Comment[]
   activityLogs    ActivityLog[]
   sentInvitations WorkspaceInvitation[]
 
   notifications Notification[]
 
-  documents Document[]
+  documents     Document[]
   collaborators DocumentAccess[]
 
   channelMembers ChannelMember[]
   messages       Message[]
   reactions      Reaction[]
+
+  hostedCalls      Call[]            @relation("CallHost")
+  callParticipants CallParticipant[]
 
   @@unique([email])
   @@map("user")
@@ -175,7 +198,8 @@ model Workspace {
 
   documents Document[]
 
-  channels       Channel[]
+  channels Channel[]
+  calls    Call[]
 
   @@map("workspaces")
 }
@@ -218,7 +242,7 @@ model Project {
 
   documents Document[]
 
-  channels       Channel[]
+  channels Channel[]
 
   @@unique([workspaceId, identifier]) // Identifiers must be unique per workspace
   @@index([workspaceId])
@@ -275,18 +299,17 @@ model Task {
   subtasks     Task[]  @relation("Subtasks")
 
   // Many-to-Many & Complex Relations
-  tags         Tag[]         @relation("TaskTags")
-  comments     Comment[]
-  activityLogs ActivityLog[]
+  tags          Tag[]          @relation("TaskTags")
+  comments      Comment[]
+  activityLogs  ActivityLog[]
   notifications Notification[]
-  attachments Attachment[]
-  linkedDocs TaskDocument[]
+  attachments   Attachment[]
+  linkedDocs    TaskDocument[]
 
   // Task Dependencies (e.g., Task A blocks Task B)
   blocking  TaskDependency[] @relation("TaskBlocking")
   blockedBy TaskDependency[] @relation("TaskBlockedBy")
-  watchers  User[] @relation("TaskWatchers")
-
+  watchers  User[]           @relation("TaskWatchers")
 
   estimatedHours Float? // The original budget
   actualHours    Float? // The reality when done
@@ -385,17 +408,15 @@ model WorkspaceInvitation {
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  userId    String           // The user receiving the notification
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  taskId    String?          // The task this relates to (optional)
-  task      Task?            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String // The user receiving the notification
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  
-  
+  taskId String? // The task this relates to (optional)
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
   type      NotificationType
-  content   String           // e.g., "Ajith assigned you to Task B"
+  content   String // e.g., "Ajith assigned you to Task B"
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
 
@@ -403,18 +424,18 @@ model Notification {
 }
 
 model Attachment {
-  id        String   @id @default(cuid())
-  name      String   // File name (e.g., "design-v1.png")
-  url       String   // The URL from UploadThing
-  size      String   // Formatted size (e.g., "1.2MB")
-  type      String   // File type (e.g., "image/png")
-  
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  id   String @id @default(cuid())
+  name String // File name (e.g., "design-v1.png")
+  url  String // The URL from UploadThing
+  size String // Formatted size (e.g., "1.2MB")
+  type String // File type (e.g., "image/png")
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   messageId String?
   message   Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  
+
   createdAt DateTime @default(now())
 
   @@index([taskId])
@@ -422,51 +443,50 @@ model Attachment {
   @@map("attachments")
 }
 
-
 // 🟢 THE CORE DOCUMENT MODEL
 model Document {
-  id          String   @id @default(cuid())
-  title       String   @default("Untitled")
-  
+  id    String @id @default(cuid())
+  title String @default("Untitled")
+
   // 🟢 BlockNote Data Storage
   // We use Json to store the exact array of blocks BlockNote generates.
-  content     Json?    
-  
+  content Json?
+
   // 🟢 Notion-style Metadata
-  emoji       String?  // e.g., "🚀"
-  coverImage  String?  // URL to an unsplash image or uploaded file
-  
+  emoji      String? // e.g., "🚀"
+  coverImage String? // URL to an unsplash image or uploaded file
+
   // 🟢 Access & State
-  isArchived  Boolean  @default(false)
-  isLocked    Boolean  @default(false) // Prevents accidental edits (Read-Only mode)
+  isArchived Boolean @default(false)
+  isLocked   Boolean @default(false) // Prevents accidental edits (Read-Only mode)
 
   // 🟢 INFINITE NESTING (The "Notion" Superpower)
   // This allows a Document to be a "child" of another Document.
-  parentId    String?
-  parent      Document?  @relation("DocumentTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children    Document[] @relation("DocumentTree")
+  parentId String?
+  parent   Document?  @relation("DocumentTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Document[] @relation("DocumentTree")
 
   // 🟢 Location Hierarchy
   workspaceId String
-  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   // projectId is optional so Docs can live globally in a Workspace, OR inside a specific Project
-  projectId   String?    
-  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   // 🟢 Ownership
-  authorId    String
-  author      User       @relation(fields: [authorId], references: [id])
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
 
   // 🟢 The TaskBridge
   linkedTasks TaskDocument[]
 
-  visibility  Visibility @default(PUBLIC) 
-  
+  visibility Visibility @default(PUBLIC)
+
   // 🟢 The relationship to track who has been invited
   collaborators DocumentAccess[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Indexes for lightning-fast queries when opening a workspace or project
   @@index([workspaceId])
@@ -477,37 +497,36 @@ model Document {
 // 🟢 THE BI-DIRECTIONAL BRIDGE (ClickUp Superpower)
 // This junction table allows many Tasks to be linked to many Documents.
 model TaskDocument {
-  id          String   @id @default(cuid())
-  
-  taskId      String
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  
-  documentId  String
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
+  id String @id @default(cuid())
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
 
   // Prevents linking the exact same task to the exact same doc twice
-  @@unique([taskId, documentId]) 
+  @@unique([taskId, documentId])
   @@index([taskId])
   @@index([documentId])
 }
 
 model DocumentAccess {
-  id          String   @id @default(cuid())
-  documentId  String
-  userId      String
-  
-  // E.g., "VIEW", "COMMENT", "EDIT"
-  accessLevel String   @default("VIEW") 
+  id         String @id @default(cuid())
+  documentId String
+  userId     String
 
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // E.g., "VIEW", "COMMENT", "EDIT"
+  accessLevel String @default("VIEW")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // A user can only have one access record per document
-  @@unique([documentId, userId]) 
+  @@unique([documentId, userId])
 }
-
 
 // ==========================================
 // REAL-TIME MESSAGING & CHAT ENGINE
@@ -515,24 +534,25 @@ model DocumentAccess {
 
 model Channel {
   id          String      @id @default(cuid())
-  name        String?     // e.g., "engineering-team" (Null for DIRECT chats)
+  name        String? // e.g., "engineering-team" (Null for DIRECT chats)
   description String?     @db.Text
   type        ChannelType @default(DIRECT)
   isPrivate   Boolean     @default(false) // RBAC: If true, only invited members can see it
 
   // Location
   workspaceId String
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   // Optional: A channel dedicated specifically to a single Project
-  projectId   String?
-  project     Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  members     ChannelMember[]
-  messages    Message[]
+  members  ChannelMember[]
+  messages Message[]
+  calls    Call[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
   @@index([projectId])
@@ -540,18 +560,18 @@ model Channel {
 }
 
 model ChannelMember {
-  id        String      @id @default(cuid())
-  role      ChannelRole @default(MEMBER) // RBAC within the specific channel
-  
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id   String      @id @default(cuid())
+  role ChannelRole @default(MEMBER) // RBAC within the specific channel
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   channelId String
-  channel   Channel     @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
   // For Unread Notifications
-  lastReadAt DateTime   @default(now())
-  joinedAt   DateTime   @default(now())
+  lastReadAt DateTime @default(now())
+  joinedAt   DateTime @default(now())
 
   @@unique([userId, channelId]) // A user is only in a channel once
   @@index([channelId])
@@ -559,33 +579,33 @@ model ChannelMember {
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  
+  id      String @id @default(cuid())
+  content String @db.Text
+
   // Enterprise States
   isEdited  Boolean   @default(false)
   deletedAt DateTime? // Soft-delete: We hide the message but keep the record for compliance
 
   // Relations
   channelId String
-  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  
-  senderId  String
-  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   // 🟢 THREADS (Self-Relation)
   // A message can be a reply to a parent message
-  parentId  String?
-  parent    Message?  @relation("ThreadReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   Message[] @relation("ThreadReplies")
+  parentId String?
+  parent   Message?  @relation("ThreadReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Message[] @relation("ThreadReplies")
 
   // Features
   attachments Attachment[]
   reactions   Reaction[]
-  fileUrls  String[]
+  fileUrls    String[]
 
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt 
+  updatedAt DateTime @updatedAt
 
   @@index([channelId])
   @@index([senderId])
@@ -595,17 +615,90 @@ model Message {
 
 // 🟢 SLACK-STYLE REACTIONS (e.g., 👍, 👀, 🚀)
 model Reaction {
-  id        String   @id @default(cuid())
-  emoji     String   // Stores the unicode emoji or identifier
+  id    String @id @default(cuid())
+  emoji String // Stores the unicode emoji or identifier
 
   messageId String
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
   @@unique([messageId, userId, emoji]) // A user can only leave one specific emoji per message
   @@map("reactions")
+}
+
+model Call {
+  id              String @id @default(cuid())
+  livekitRoomName String @unique // The exact string ID used to create the LiveKit room
+
+  type   CallType
+  status CallStatus @default(ONGOING)
+
+  // Formal Meeting Metadata (Null for Huddles)
+  title       String? // e.g., "Q3 Sprint Planning"
+  description String? @db.Text
+
+  // Timing & Lifecycle
+  scheduledFor DateTime? // Only populated for SCHEDULED calls
+  startedAt    DateTime? // Timestamp when the first person joins
+  endedAt      DateTime? // Timestamp when the room is officially destroyed
+
+  // Relations: Where does this call live?
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  channelId String? // Populated if it's an ad-hoc Huddle inside a specific channel
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  // The creator/owner of the call
+  hostId String
+  host   User   @relation("CallHost", fields: [hostId], references: [id])
+
+  // Connected Data
+  participants CallParticipant[]
+  recordings   CallRecording[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes for high-performance querying
+  @@index([workspaceId])
+  @@index([channelId])
+  @@index([status])
+}
+
+model CallParticipant {
+  id String @id @default(cuid())
+
+  callId String
+  call   Call   @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role CallRole @default(PARTICIPANT)
+
+  // Audit trail for analytics (How long were they in the meeting?)
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  @@unique([callId, userId]) // A user has only one participant record per call
+  @@index([userId])
+}
+
+// Phase 3 Future-Proofing: Cloud Recordings
+model CallRecording {
+  id String @id @default(cuid())
+
+  callId String
+  call   Call   @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  fileUrl   String // The UploadThing or S3 URL
+  duration  Int? // Duration in seconds
+  sizeBytes BigInt?
+
+  createdAt DateTime @default(now())
 }

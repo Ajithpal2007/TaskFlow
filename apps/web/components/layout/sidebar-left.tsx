@@ -4,7 +4,7 @@ import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
-import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle,Activity } from "lucide-react";
+import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle,Activity, Presentation } from "lucide-react";
 import { useNotifications } from "@/hooks/api/use-notifications";
 
 import {
@@ -333,6 +333,35 @@ export function SidebarLeft() {
             )}
           </SidebarMenu>
         </SidebarGroup>
+
+
+
+{/* 🟢 CANVAS / VISUALS GROUP */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
+            Visuals
+          </SidebarGroupLabel>
+
+          <SidebarMenu>
+            <SidebarMenuItem>
+              {/* Check if the URL contains '/canvas' to highlight the button */}
+              <SidebarMenuButton 
+                asChild 
+                isActive={pathname.includes(`/dashboard/${activeWorkspace?.id}/canvas`)}
+              >
+                <Link href={`/dashboard/${activeWorkspace?.id}/canvas`}>
+                  {/* You can swap Presentation for Layout, PenTool, or Brush from lucide-react */}
+                  <Presentation className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="group-data-[collapsible=icon]:hidden truncate">
+                    Whiteboards
+                  </span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
+
       </SidebarContent>
 
       <SidebarFooter>

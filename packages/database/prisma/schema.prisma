@@ -128,8 +128,10 @@ model User {
   messages       Message[]
   reactions      Reaction[]
 
-  hostedCalls      Call[]            @relation("CallHost")
-  callParticipants CallParticipant[]
+  hostedCalls        Call[]              @relation("CallHost")
+  callParticipants   CallParticipant[]
+  whiteboards        Whiteboard[]
+  whiteboardVersions WhiteboardVersion[]
 
   @@unique([email])
   @@map("user")
@@ -198,8 +200,9 @@ model Workspace {
 
   documents Document[]
 
-  channels Channel[]
-  calls    Call[]
+  channels    Channel[]
+  calls       Call[]
+  whiteboards Whiteboard[]
 
   @@map("workspaces")
 }
@@ -217,6 +220,7 @@ model WorkspaceMember {
 
   @@unique([userId, workspaceId])
   @@index([workspaceId])
+  @@index([userId])
   @@map("workspace_members")
 }
 
@@ -242,7 +246,8 @@ model Project {
 
   documents Document[]
 
-  channels Channel[]
+  channels    Channel[]
+  whiteboards Whiteboard[]
 
   @@unique([workspaceId, identifier]) // Identifiers must be unique per workspace
   @@index([workspaceId])
@@ -262,6 +267,7 @@ model ProjectMember {
 
   @@unique([userId, projectId])
   @@index([projectId])
+  @@index([userId])
   @@map("project_members")
 }
 
@@ -701,4 +707,82 @@ model CallRecording {
   sizeBytes BigInt?
 
   createdAt DateTime @default(now())
+}
+
+// -----------------------------------------------------------------------------
+// PHASE 4: COLLABORATIVE CANVAS (TLDRAW)
+// -----------------------------------------------------------------------------
+
+model Whiteboard {
+  id    String @id @default(cuid())
+  title String
+
+  // 🟢 ROUTING & MULTIPLAYER
+  workspaceId String
+  projectId   String? // Optional: Canvas can be workspace-wide or project-specific
+  roomId      String  @unique // The exact Liveblocks/Yjs Room ID
+
+  imageUrl String?
+
+  // 🟢 STORAGE & RECOVERY
+  // Stores the serialized tldraw document state. Used as a fallback if 
+  // the Liveblocks room is hibernated or deleted.
+  latestSnapshot Json?
+
+  // 🟢 ACCESS CONTROL
+  isPublic Boolean @default(false)
+  isLocked Boolean @default(false) // Prevents further edits
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  // 🟢 RELATIONS
+  versions WhiteboardVersion[]
+  assets   WhiteboardAsset[]
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator   User      @relation(fields: [createdById], references: [id])
+
+  @@index([workspaceId])
+  @@index([projectId])
+}
+
+// 🟢 AUDIT TRAIL & TIME-TRAVEL
+// Periodically saves the canvas state (e.g., via a CRON job or manual "Save Version" button)
+// so users can restore deleted ideas.
+model WhiteboardVersion {
+  id           String @id @default(cuid())
+  whiteboardId String
+
+  versionName String? // e.g., "Initial Brainstorm", "Pre-Design Review"
+  snapshot    Json // The exact tldraw state at this moment in time
+
+  createdAt DateTime @default(now())
+  savedById String
+
+  whiteboard Whiteboard @relation(fields: [whiteboardId], references: [id], onDelete: Cascade)
+  savedBy    User       @relation(fields: [savedById], references: [id])
+
+  @@index([whiteboardId])
+}
+
+// 🟢 ASSET MANAGEMENT (CRITICAL FOR S3/UPLOADTHING)
+// Tracks images/videos pasted into the whiteboard. 
+// If a whiteboard is deleted, you use this table to delete the files from your bucket.
+model WhiteboardAsset {
+  id           String @id @default(cuid())
+  whiteboardId String
+
+  tldrawAssetId String // The internal ID tldraw uses for this asset
+  mimeType      String // e.g., "image/png", "video/mp4"
+  fileUrl       String // The UploadThing / S3 URL
+  fileSize      Int // Stored in bytes for billing/quota tracking
+
+  createdAt DateTime @default(now())
+
+  whiteboard Whiteboard @relation(fields: [whiteboardId], references: [id], onDelete: Cascade)
+
+  @@index([whiteboardId])
 }

@@ -10,6 +10,7 @@ import { ourFileRouter } from "./lib/uploadthing";
 
 import { setupWSConnection } from "./lib/yjs-utils.js";
 
+import fastifyRawBody from "fastify-raw-body";
 
 export async function buildServer() {
   const fastify = Fastify({
@@ -22,6 +23,11 @@ export async function buildServer() {
   await fastify.register(websocket);
 
   
+  await fastify.register(fastifyRawBody, {
+    field: "rawBody", // This adds request.rawBody
+    global: false, // We only want to use this on specific webhook routes
+    encoding: "utf8",
+  });
 
   // 🟢 Add this Global Test Route to bypass all middleware!
   fastify.get("/ws-test", { websocket: true }, (connection, request) => {
@@ -33,12 +39,14 @@ export async function buildServer() {
     });
   });
 
-
   // 🟢 THE NEW YJS COLLABORATION ROUTE
-  fastify.get("/api/collaboration/:documentId", { websocket: true }, (connection, request) => {
-
-    setupWSConnection(connection, request.raw);
-  });
+  fastify.get(
+    "/api/collaboration/:documentId",
+    { websocket: true },
+    (connection, request) => {
+      setupWSConnection(connection, request.raw);
+    },
+  );
 
   await fastify.register(cors, {
     origin: "http://localhost:3000",
@@ -72,7 +80,7 @@ export async function buildServer() {
   }));
 
   fastify.get("/", async (request, reply) => {
-    // When Google OAuth drops them on localhost:4000, 
+    // When Google OAuth drops them on localhost:4000,
     // instantly ping them back to localhost:3000/dashboard
     return reply.redirect("http://localhost:3000/dashboard");
   });
@@ -107,19 +115,21 @@ export async function buildServer() {
     prefix: "/api",
   });
 
-  
   await fastify.register(import("./routes/search/index.js"), {
     prefix: "/api/search",
   });
 
   await fastify.register(import("./routes/chat/index.js"), {
-  prefix: "/api/chat",
-});
+    prefix: "/api/chat",
+  });
 
   await fastify.register(import("./routes/calls/index.js"), {
     prefix: "/api/calls",
   });
- 
+
+  await fastify.register(import("./routes/canvas/index.js"), {
+    prefix: "/api/canvas",
+  });
 
   return fastify;
 }

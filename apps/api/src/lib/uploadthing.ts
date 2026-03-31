@@ -3,6 +3,15 @@ import { createUploadthing, type FileRouter } from "uploadthing/fastify";
 const f = createUploadthing();
 
 export const ourFileRouter = {
+
+  // 🟢 NEW: Dedicated endpoint for Canvas Thumbnails
+  imageUploader: f({
+    image: { maxFileSize: "4MB", maxFileCount: 1 },
+  }).onUploadComplete(async ({ metadata, file }) => {
+    console.log("Canvas thumbnail uploaded:", file.url);
+    return { url: file.url };
+  }),
+
   // Define a route for task attachments
   attachmentUploader: f({
     image: { maxFileSize: "4MB", maxFileCount: 4 },

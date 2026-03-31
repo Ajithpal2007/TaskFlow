@@ -1,15 +1,27 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 🟢 Fixed for Next.js 14.2
+  experimental: {
+    serverComponentsExternalPackages: ['ws', '@neondatabase/serverless'],
+  },
+  
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "lh3.googleusercontent.com", // 🟢 Whitelist Google Avatars
       },
-      // You might also want to add GitHub avatars if you use GitHub login!
       {
         protocol: "https",
         hostname: "avatars.githubusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "utfs.io", 
+      },
+      {
+        protocol: "https",
+        hostname: "uploadthing.com",
       }
     ],
   },
@@ -17,7 +29,7 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/auth/:path*',
+        source: '/api/:path*',
         destination: 'http://localhost:4000/api/auth/:path*',
       },
     ];

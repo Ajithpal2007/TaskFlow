@@ -9,6 +9,9 @@ import { requireAuth } from "../../middleware/require-auth.js";
 import { prisma,NotificationType, PrismaClient } from "@repo/database";
 
 
+ import { notificationQueue } from "../../lib/queue"; 
+
+
 export default async function taskRoutes(fastify: FastifyInstance) {
   // 1. Get all tasks for a specific project
   // GET /api/tasks/project/:projectId
@@ -46,9 +49,9 @@ export default async function taskRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // 3. Update a task (The Drag-and-Drop Handler)
-  // PATCH /api/tasks/:taskId
- fastify.patch(
+  
+
+fastify.patch(
     "/:taskId",
     {
       preHandler: requireAuth,
@@ -56,8 +59,6 @@ export default async function taskRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const { taskId } = request.params as { taskId: string };
-
-        // Use the .partial() schema so we can update just the status or priority
         const result = updateTaskSchema.safeParse(request.body);
 
         if (!result.success) {
@@ -66,28 +67,41 @@ export default async function taskRoutes(fastify: FastifyInstance) {
 
         const userId = (request as any).user.id;
         const oldTask = await prisma.task.findUnique({ where: { id: taskId } });
+        
+        // 1. Do the core database update as fast as possible
         const updatedTask = await taskService.updateTask(
           taskId,
           userId,
           result.data,
         );
+
+        // 2. FIRE AND FORGET! 
+        // If the assignee changed, push a job to Redis and walk away.
         if (
           result.data.assigneeId && 
           result.data.assigneeId !== oldTask?.assigneeId && 
           result.data.assigneeId !== userId
         ) {
-          const assigner = await prisma.user.findUnique({ where: { id: userId }});
-
-          await prisma.notification.create({
-            data: {
-              userId: result.data.assigneeId, // Send it to the new assignee
-              type: "ASSIGNED",
+          await notificationQueue.add(
+            'task-assigned', // The name of the job
+            {
               taskId: taskId,
-              content: `${assigner?.name || "Someone"} assigned you to "${updatedTask.title}"`,
+              newAssigneeId: result.data.assigneeId,
+              assignerId: userId,
+              taskTitle: updatedTask.title,
+            },
+            {
+              // 🟢 THE ENTERPRISE SECRET: DEBOUNCING
+              // By setting a specific jobId, if you assign this task to someone else 
+              // 5 seconds later, BullMQ prevents duplicate jobs from flooding the queue!
+              jobId: `assign-notification-${taskId}`, 
+              delay: 30000, // Wait 30 seconds before processing, just in case they change their mind
+              removeOnComplete: true, // Keep Redis memory clean
             }
-          });
+          );
         }
 
+        // 3. Return to the frontend instantly!
         return { data: updatedTask };
       } catch (error) {
         console.error("Failed to update task:", error);
@@ -95,6 +109,9 @@ export default async function taskRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+
+
 
   // 4. Get full details of a single task (For the "Edit" modal)
   // GET /api/tasks/:taskId
@@ -115,54 +132,55 @@ export default async function taskRoutes(fastify: FastifyInstance) {
   });
 
  fastify.post(
-    "/:taskId/comments",
-    { preHandler: [requireAuth] },
-    async (req, reply) => {
-      const { taskId } = req.params as { taskId: string };
-      const { content } = req.body as { content: string };
-      
-      const userId = (req as any).user.id;
-      // 🟢 1. Grab the actor's name so the notification says "Ajith mentioned you"
-      const userName = (req as any).user.name || "Someone"; 
+  "/:taskId/comments",
+  { preHandler: [requireAuth] },
+  async (req, reply) => {
+    const { taskId } = req.params as { taskId: string };
+    const { content } = req.body as { content: string };
+    
+    const userId = (req as any).user.id;
+    const userName = (req as any).user.name || "Someone"; 
 
-      try {
-        // Calling your flawless service function to save the comment!
-        const comment = await taskService.addComment(taskId, content, userId);
+    try {
+      // 1. Save the comment fast
+      const comment = await taskService.addComment(taskId, content, userId);
 
-        // --- 🟢 2. THE MENTIONS INTERCEPTOR ---
-        const mentionRegex = /@\[.*?\]\((.*?)\)/g;
-        let match;
-        const mentionedUserIds = new Set<string>();
+      // 2. Parse the mentions
+      const mentionRegex = /@\[.*?\]\((.*?)\)/g;
+      let match;
+      const mentionedUserIds = new Set<string>();
 
-        // Find every User ID hidden in the @[...] text
-        while ((match = mentionRegex.exec(content)) !== null) {
-          mentionedUserIds.add(match[1]); // match[1] is the extracted ID
-        }
-
-        // If we found any mentions, blast out the notifications!
-       if (mentionedUserIds.size > 0) {
-          const notificationsData = Array.from(mentionedUserIds).map((mentionedId) => ({
-            userId: mentionedId, 
-            taskId: taskId,      
-            // 🟢 THE FIX: Use the strict Prisma Enum instead of a normal string
-            type: NotificationType.MENTIONED, 
-            content: `${userName} mentioned you in a comment`, 
-          }));
-
-          // Bulk insert them to keep the database fast
-          await prisma.notification.createMany({
-            data: notificationsData,
-          });
-        }
-        // --------------------------------------
-
-        return reply.send({ success: true, data: comment });
-      } catch (error) {
-        console.error("Failed to post comment:", error); // Helpful for debugging!
-        return reply.status(500).send({ error: "Internal Server Error" });
+      while ((match = mentionRegex.exec(content)) !== null) {
+        mentionedUserIds.add(match[1]); 
       }
-    },
-  );
+
+      // 3. FIRE AND FORGET! Send to Redis
+      if (mentionedUserIds.size > 0) {
+        await notificationQueue.add(
+          'user-mentioned', // The job name
+          {
+            taskId: taskId,
+            actorName: userName,
+            mentionedUserIds: Array.from(mentionedUserIds), // Pass the array of IDs
+            commentId: comment.id, 
+            snippet: content.substring(0, 50) + "..." // Optional: give them context
+          },
+          {
+            // For mentions, we usually want them immediately. No long delay needed.
+            // But we still offload the DB work so the UI is fast.
+            removeOnComplete: true, 
+          }
+        );
+      }
+
+      // 4. Return to frontend instantly
+      return reply.send({ success: true, data: comment });
+    } catch (error) {
+      console.error("Failed to post comment:", error); 
+      return reply.status(500).send({ error: "Internal Server Error" });
+    }
+  },
+);
 
   // 5. Delete a task
   fastify.delete("/:taskId", async (request, reply) => {
@@ -337,7 +355,7 @@ fastify.post("/:taskId/links", async (request, reply) => {
 
   // 🟢 Make sure the URL parameter matches what your other routes use (usually :id or :taskId)
   fastify.post(
-    "/:id/attachments", // <-- If your other routes use '/:id', use '/:id' here!
+    "/:id/attachments", 
     async (request, reply) => {
       // Grab the ID from the URL params
       const { id } = request.params as { id: string };

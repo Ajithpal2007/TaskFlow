@@ -11,6 +11,14 @@ import { ourFileRouter } from "./lib/uploadthing";
 import { setupWSConnection } from "./lib/yjs-utils.js";
 
 import fastifyRawBody from "fastify-raw-body";
+import fastifyRateLimit from '@fastify/rate-limit';
+import { redisConnection } from './lib/queue';
+
+import './workers/notificationWorker';
+import './workers/emailWorker';
+import './workers/canvasWorker';
+import './workers/cleanupWorker';
+
 
 export async function buildServer() {
   const fastify = Fastify({
@@ -22,6 +30,16 @@ export async function buildServer() {
 
   await fastify.register(websocket);
 
+  fastify.register(fastifyRateLimit, {
+  global: true, // 🟢 ON BY DEFAULT FOR ALL ROUTES
+  max: 150,     // 150 requests...
+  timeWindow: '1 minute', // ...per minute
+  redis: redisConnection,
+  errorResponseBuilder: (request, context) => ({
+    success: false,
+    message: `Whoa there! You're moving too fast. Please wait ${context.after}.`
+  })
+});
   
   await fastify.register(fastifyRawBody, {
     field: "rawBody", // This adds request.rawBody

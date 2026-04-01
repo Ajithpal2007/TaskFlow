@@ -16,39 +16,19 @@ export const useTasks = (projectId?: string) => {
   });
 
   // 2. CREATE: Mutation to add a new task to the BOARD
+  
   const createTaskMutation = useMutation({
     mutationFn: async (newTaskData: any) => {
       const { data } = await apiClient.post(`/tasks`, newTaskData);
       return data.data;
     },
-    onMutate: async (newTask) => {
-      const QUERY_KEY = ["tasks", projectId];
-      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
-      const previousTasks = queryClient.getQueryData(QUERY_KEY);
-
-      const optimisticTask = {
-        id: `temp-${Date.now()}`,
-        title: newTask.title,
-        status: newTask.status || "TODO",
-        projectId,
-        priority: "NONE",
-        project: { identifier: "NEW" },
-        createdAt: new Date().toISOString(),
-      };
-
-      queryClient.setQueryData(QUERY_KEY, (old: any) => {
-        const currentList = Array.isArray(old) ? old : old?.data || [];
-        return [...currentList, optimisticTask];
-      });
-      return { previousTasks, QUERY_KEY };
+    onSuccess: () => {
+      // 🟢 THE FIX: Delete `setQueryData` completely.
+      // Just tell TanStack to fetch the fresh board. This guarantees 
+      // zero duplicates and zero flickering, relying 100% on the database.
+      queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
     },
-    onError: (err, vars, context) => {
-      if (context?.QUERY_KEY)
-        queryClient.setQueryData(context.QUERY_KEY, context.previousTasks);
-    },
-    onSettled: (data, err, vars, context) => {
-      if (context?.QUERY_KEY)
-        queryClient.invalidateQueries({ queryKey: context.QUERY_KEY });
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["workspace-analytics"] });
     },
   });
@@ -73,8 +53,10 @@ export const useTasks = (projectId?: string) => {
       queryClient.setQueryData(QUERY_KEY, (oldTasks: any) => {
         if (!oldTasks) return [];
 
-        const currentList = Array.isArray(oldTasks) ? oldTasks : oldTasks?.data || [];
-        
+        const currentList = Array.isArray(oldTasks)
+          ? oldTasks
+          : oldTasks?.data || [];
+
         return currentList.map((task: any) =>
           task.id === taskId ? { ...task, ...updates } : task,
         );
@@ -104,8 +86,6 @@ export const useTasks = (projectId?: string) => {
     },
   });
 
-  
-
   return {
     tasks: tasksQuery.data ?? [],
     isLoading: tasksQuery.isLoading,
@@ -118,3 +98,4 @@ export const useTasks = (projectId?: string) => {
     isDeleting: deleteTaskMutation.isPending,
   };
 };
+

@@ -6,7 +6,15 @@ import { FastifyInstance } from "fastify";
 export default async function callRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/channels/:channelId/huddle",
-    { preHandler: [requireAuth] },
+    {
+      preHandler: [requireAuth],
+      config: {
+        rateLimit: {
+          max: 10,
+          timeWindow: "1 minute",
+        },
+      },
+    },
     async (request, reply) => {
       const userId = (request as any).user.id;
       const userName = (request as any).user.name; // Assuming you have name in auth context
@@ -35,7 +43,7 @@ export default async function callRoutes(fastify: FastifyInstance) {
         // 3. If no active call, create a new one using the real workspaceId!
         if (!call) {
           const livekitRoomName = `huddle-${channelId}-${Date.now()}`;
-          
+
           call = await prisma.call.create({
             data: {
               livekitRoomName,
@@ -83,8 +91,8 @@ export default async function callRoutes(fastify: FastifyInstance) {
         at.addGrant({
           roomJoin: true,
           room: call.livekitRoomName,
-          canPublish: true,      // Can share audio/video
-          canSubscribe: true,    // Can hear/see others
+          canPublish: true, // Can share audio/video
+          canSubscribe: true, // Can hear/see others
         });
 
         // Use standard sync toJwt() or await if it returns a promise in your SDK version
@@ -99,11 +107,10 @@ export default async function callRoutes(fastify: FastifyInstance) {
             wsUrl: process.env.LIVEKIT_URL,
           },
         });
-
       } catch (error) {
         console.error("Huddle creation failed:", error);
         return reply.code(500).send({ message: "Failed to join huddle" });
       }
-    }
+    },
   );
 }

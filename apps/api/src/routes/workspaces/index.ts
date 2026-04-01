@@ -12,6 +12,8 @@ import crypto from "crypto";
 
 import { requireWorkspaceRole } from "../../middleware/require-role";
 
+import { emailQueue } from "../../lib/queue"; 
+
 export default async function workspaceRoutes(fastify: FastifyInstance) {
   // POST /api/workspaces
   fastify.post(
@@ -229,87 +231,79 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post(
-    "/:slug/invites",
-    { preHandler: [requireAuth] },
-    async (request, reply) => {
-      const { slug } = request.params as { slug: string };
-      const { email, role } = request.body as { email: string; role?: string };
-      const workspaceId = slug;
-
-      // 🟢 3. Because of requireAuth, request.user is now 100% guaranteed to exist!
-      const inviterId = (request as any).user.id;
-      try {
-        // 🟢 THE VAULT: Check if the inviter is actually an ADMIN or OWNER
-        const inviterMembership = await prisma.workspaceMember.findFirst({
-          where: {
-            workspaceId: workspaceId,
-            userId: inviterId,
-          },
-        });
-
-        if (
-          !inviterMembership ||
-          (inviterMembership.role !== "OWNER" &&
-            inviterMembership.role !== "ADMIN")
-        ) {
-          return reply.status(403).send({
-            success: false,
-            message:
-              "Forbidden: You do not have permission to invite members to this workspace.",
-          });
-        }
-        const token = crypto.randomBytes(32).toString("hex");
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-        // Fetch Workspace & User
-        const workspace = await prisma.workspace.findUnique({
-          where: { id: workspaceId },
-        });
-        const inviter = await prisma.user.findUnique({
-          where: { id: inviterId },
-        });
-
-        if (!workspace || !inviter) {
-          return reply
-            .status(404)
-            .send({ success: false, message: "Workspace or User not found" });
-        }
-
-        // Save to DB
-        await prisma.workspaceInvitation.upsert({
-          where: { email_workspaceId: { email, workspaceId } },
-          update: { token, expiresAt, role: role || "MEMBER", inviterId },
-          create: {
-            email,
-            token,
-            expiresAt,
-            role: role || "MEMBER",
-            workspaceId,
-            inviterId,
-          },
-        });
-
-        // Send Email
-        await sendInviteEmail(
-          email,
-          inviter.name || "A teammate",
-          workspace.name,
-          token,
-        );
-
-        console.log("✅ Email successfully sent to:", email);
-        return reply
-          .status(200)
-          .send({ success: true, message: "Invitation sent!" });
-      } catch (error) {
-        console.error("❌ CRASH IN INVITE ROUTE:", error);
-        return reply
-          .status(500)
-          .send({ success: false, message: "Internal Server Error" });
+ fastify.post(
+  "/:slug/invites",
+  { preHandler: [requireAuth] ,
+    config: {
+      rateLimit: {
+        max: 5,             // Max 5 invites...
+        timeWindow: '1 minute' // ...per 1 minute window
       }
-    },
-  );
+    }
+  },
+  async (request, reply) => {
+    const { slug: workspaceId } = request.params as { slug: string };
+    const { email, role } = request.body as { email: string; role?: string };
+    const inviterId = (request as any).user.id;
+
+    try {
+      // 1. Auth & Validation (Unchanged)
+      const inviterMembership = await prisma.workspaceMember.findFirst({
+        where: { workspaceId, userId: inviterId },
+      });
+
+      if (!inviterMembership || (inviterMembership.role !== "OWNER" && inviterMembership.role !== "ADMIN")) {
+        return reply.status(403).send({
+          success: false,
+          message: "Forbidden: You do not have permission to invite members.",
+        });
+      }
+
+      const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+      const inviter = await prisma.user.findUnique({ where: { id: inviterId } });
+
+      if (!workspace || !inviter) {
+        return reply.status(404).send({ success: false, message: "Workspace or User not found" });
+      }
+
+      // 2. Generate Token & Save to DB (Unchanged)
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      await prisma.workspaceInvitation.upsert({
+        where: { email_workspaceId: { email, workspaceId } },
+        update: { token, expiresAt, role: role || "MEMBER", inviterId },
+        create: { email, token, expiresAt, role: role || "MEMBER", workspaceId, inviterId },
+      });
+
+      // 🟢 3. FIRE AND FORGET! Hand it off to BullMQ
+      await emailQueue.add(
+        'workspace-invite', // Job Name
+        {
+          toEmail: email,
+          inviterName: inviter.name || "A teammate",
+          workspaceName: workspace.name,
+          token: token,
+        },
+        {
+          attempts: 3, // If Nodemailer fails, try 3 more times
+          backoff: {
+            type: 'exponential',
+            delay: 5000, // Wait 5s, then 10s, then 20s if it keeps failing
+          },
+          removeOnComplete: true, // Keep Redis memory clean
+        }
+      );
+
+      // 4. Return to frontend INSTANTLY
+      return reply.status(200).send({ success: true, message: "Invitation queued successfully!" });
+      
+    } catch (error) {
+      console.error("❌ CRASH IN INVITE ROUTE:", error);
+      return reply.status(500).send({ success: false, message: "Internal Server Error" });
+    }
+  },
+);
 
   // 🟢 ROUTE: Accept an Invitation
   fastify.post(

@@ -1,14 +1,16 @@
 import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/database";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { sendDocumentInviteEmail } from "../../services/email.service.js";
+import { emailQueue,cleanupQueue } from "../../lib/queue";
+ import { requireWorkspaceRole } from "../../middleware/require-role";
 
 const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // 🟢 1. GET ALL DOCS FOR SIDEBAR (The Recursive Tree)
   // Frontend Hook: apiClient.get(`/docs/workspace/${workspaceId}`)
   fastify.get(
     "/docs/workspace/:workspaceId",
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
+
     async (request, reply) => {
       const { workspaceId } = request.params as { workspaceId: string };
       const userId = (request as any).user.id;
@@ -49,7 +51,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // Frontend Hook: apiClient.post("/docs", payload)
   fastify.post(
     "/docs",
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { title, parentId, workspaceId } = request.body as any;
       const userId = (request as any).user.id;
@@ -77,7 +79,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // Frontend Hook: apiClient.get(`/docs/${docId}`)
   fastify.get(
     "/docs/:docId",
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
 
@@ -107,7 +109,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // Frontend Hook: apiClient.patch(`/docs/${docId}`, updates)
   fastify.patch(
     "/docs/:docId",
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
       const updates = request.body as any;
@@ -134,7 +136,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // Frontend Hook: apiClient.patch(`/docs/${docId}/archive`, { isArchived: true })
   fastify.patch(
     "/docs/:docId/archive",
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
       const { isArchived } = request.body as { isArchived: boolean };
@@ -157,7 +159,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // Frontend Hook: apiClient.get(`/docs/workspace/${workspaceId}/trash`)
   fastify.get(
     "/docs/workspace/:workspaceId/trash",
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", ])] },
     async (request, reply) => {
       const { workspaceId } = request.params as { workspaceId: string };
 
@@ -176,33 +178,59 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
     },
   );
 
+  
+
   // 🔴 7. PERMANENTLY DELETE DOCUMENT
-  // Frontend Hook: apiClient.delete(`/docs/${docId}`)
   fastify.delete(
     "/docs/:docId",
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", ])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
 
       try {
+        // 1. Fetch the document BEFORE deleting it so we don't lose the file URLs!
+        const document = await prisma.document.findUnique({
+          where: { id: docId },
+          select: { coverImage: true, content: true } // Grab anything that might contain an image URL
+        });
+
+        if (!document) {
+          return reply.code(404).send({ message: "Document not found" });
+        }
+
+        let fileUrlsToDelete: string[] = [];
+
+        // 2. Extract the Cover Image URL (if it exists)
+        if (document.coverImage && document.coverImage.includes("uploadthing.com")) {
+          fileUrlsToDelete.push(document.coverImage);
+        }
+
+        // (Optional) 3. If you store image URLs inside the JSON `content`, 
+        // you could write a quick regex here to extract them too!
+
+        // 4. Delete the database row (Instantly removes it from the user's UI)
         await prisma.document.delete({
           where: { id: docId },
         });
-        return reply
-          .code(200)
-          .send({ message: "Document permanently deleted" });
+
+        // 🟢 5. FIRE AND FORGET! Tell BullMQ to hunt down and delete the physical files
+        if (fileUrlsToDelete.length > 0) {
+          await cleanupQueue.add('delete-uploadthing-files', {
+            fileUrls: fileUrlsToDelete
+          });
+        }
+
+        return reply.code(200).send({ message: "Document permanently deleted" });
       } catch (error) {
-        return reply
-          .code(500)
-          .send({ message: "Failed to delete document", error });
+        console.error("Delete Error:", error);
+        return reply.code(500).send({ message: "Failed to delete document", error });
       }
     },
   );
-
   // 🟢 8. INVITE COLLABORATOR
   fastify.post(
     "/docs/:docId/invite",
-    { preHandler: [requireAuth] },
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
       const { email, accessLevel } = request.body as { email: string; accessLevel: string };
@@ -219,32 +247,47 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
 
         // 2. Check if the user exists
         const invitedUser = await prisma.user.findUnique({ where: { email } });
+        const isNewUser = !invitedUser;
 
-        if (invitedUser) {
-          // 🟢 USER EXISTS: Save access to Postgres and send the standard email
+        // 3. Do the fast Database work
+        if (!isNewUser) {
+          // 🟢 USER EXISTS: Save access to Postgres instantly
           await prisma.documentAccess.upsert({
             where: { documentId_userId: { documentId: docId, userId: invitedUser.id } },
             update: { accessLevel },
             create: { documentId: docId, userId: invitedUser.id, accessLevel }
           });
+        }
 
-          await sendDocumentInviteEmail(
-            email, inviter.name!, document.title, document.workspaceId, docId, accessLevel, false
-          );
+        // 4. FIRE AND FORGET! Push the email job to Redis
+        await emailQueue.add(
+          'document-invite', // The job name
+          {
+            email: email,
+            inviterName: inviter.name || "A teammate",
+            documentTitle: document.title,
+            workspaceId: document.workspaceId,
+            docId: docId,
+            accessLevel: accessLevel,
+            isNewUser: isNewUser // Pass the boolean so the worker knows which template to use
+          },
+          {
+            attempts: 3, // Retry if Nodemailer fails
+            backoff: { type: 'exponential', delay: 5000 },
+            removeOnComplete: true,
+          }
+        );
 
-          return reply.code(200).send({ message: "Access granted and email sent!" });
+        // 5. Instantly return success to the UI
+        if (!isNewUser) {
+          return reply.code(200).send({ message: "Access granted and email queued!" });
         } else {
-          // 🟡 USER DOES NOT EXIST: Send the "Join TaskFlow" email
-          await sendDocumentInviteEmail(
-            email, inviter.name!, document.title, document.workspaceId, docId, accessLevel, true
-          );
-
-          return reply.code(200).send({ message: "Invite email sent to new user!" });
+          return reply.code(200).send({ message: "Invite email queued for new user!" });
         }
 
       } catch (error) {
         console.error("Invite Error:", error);
-        return reply.code(500).send({ message: "Failed to send invite", error });
+        return reply.code(500).send({ message: "Failed to process invite", error });
       }
     }
   );

@@ -1,9 +1,12 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "@repo/database";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { Liveblocks } from "@liveblocks/node";
+import { Liveblocks, WebhookHandler } from "@liveblocks/node";
 import crypto from "crypto";
-import { WebhookHandler } from "@liveblocks/node";
+
+import { canvasQueue, cleanupQueue } from "../../lib/queue";
+
+import { requireWorkspaceRole } from "../../middleware/require-role";
 
 // Initialize the Liveblocks Node SDK using your secure backend key
 const liveblocks = new Liveblocks({
@@ -15,7 +18,12 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
   // This matches the apiClient.post(`/canvas/workspaces/${workspaceId}`) from your frontend
   fastify.post(
     "/workspaces/:workspaceId",
-    { preHandler: [requireAuth] },
+    {
+      preHandler: [
+        requireAuth,
+        requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"]),
+      ],
+    },
     async (request, reply) => {
       const { workspaceId } = request.params as { workspaceId: string };
       const { title } = request.body as { title: string };
@@ -47,7 +55,12 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
   // 🟢 LIVEBLOCKS AUTHENTICATION WITH ENFORCED RBAC
   fastify.post(
     "/liveblocks-auth",
-    { preHandler: [requireAuth] },
+    {
+      preHandler: [
+        requireAuth,
+        requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER", "GUEST"]),
+      ],
+    },
     async (request, reply) => {
       const user = (request as any).user;
       const { room } = request.body as { room: string };
@@ -75,11 +88,11 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
         const workspaceMember = await prisma.workspaceMember.findUnique({
           where: {
             // 🟢 MATCHES YOUR SCHEMA: userId first, workspaceId second
-            userId_workspaceId: { 
-              userId: user.id, 
-              workspaceId: board.workspaceId 
-            }
-          }
+            userId_workspaceId: {
+              userId: user.id,
+              workspaceId: board.workspaceId,
+            },
+          },
         });
 
         if (workspaceMember) {
@@ -91,19 +104,17 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
         }
 
         // 4. Project Level Permissions (Overrides Workspace)
-        
+
         if (board.projectId) {
           const projectMember = await prisma.projectMember.findUnique({
             where: {
               // 🟢 MATCHES YOUR SCHEMA: userId first, projectId second
-              userId_projectId: { 
-                userId: user.id, 
-                projectId: board.projectId 
-              }
-            }
+              userId_projectId: {
+                userId: user.id,
+                projectId: board.projectId,
+              },
+            },
           });
-          
-          
 
           if (projectMember) {
             canView = true;
@@ -126,11 +137,9 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
 
         // 6. Final Access Check
         if (!canView) {
-          return reply
-            .code(403)
-            .send({
-              message: "Forbidden: You do not have access to this board.",
-            });
+          return reply.code(403).send({
+            message: "Forbidden: You do not have access to this board.",
+          });
         }
 
         // 7. Issue the specific Liveblocks token
@@ -158,7 +167,12 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
   // 🟢 UPDATE WHITEBOARD TITLE & THUMBNAIL
   fastify.patch(
     "/workspaces/:workspaceId/boards/:boardId",
-    { preHandler: [requireAuth] },
+    {
+      preHandler: [
+        requireAuth,
+        requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"]),
+      ],
+    },
     async (request, reply) => {
       const { workspaceId, boardId } = request.params as {
         workspaceId: string;
@@ -201,13 +215,10 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
 
   fastify.post(
     "/webhooks/liveblocks",
-    { config: { rawBody: true } }, // Tells fastify-raw-body to capture the raw text here
+    { config: { rawBody: true } },
     async (request, reply) => {
-      // 1. Verify the webhook signature
       const webhookSecret = process.env.LIVEBLOCKS_WEBHOOK_SECRET;
-      if (!webhookSecret) {
-        return reply.code(500).send("Webhook secret is missing from .env");
-      }
+      if (!webhookSecret) return reply.code(500).send("Webhook secret missing");
 
       const webhookHandler = new WebhookHandler(webhookSecret);
       const headers = request.headers as Record<string, string>;
@@ -221,44 +232,55 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
         return reply.code(400).send("Invalid signature");
       }
 
-      // 2. Listen specifically for Y.js document updates
       if (event.type === "ydocUpdated") {
         const roomId = event.data.roomId;
 
-        try {
-          // 3. Download the actual binary Y.js state from Liveblocks
-          const response = await fetch(
-            `https://api.liveblocks.io/v2/rooms/${roomId}/ydoc`,
-            {
-              headers: {
-                Authorization: `Bearer ${process.env.LIVEBLOCKS_SECRET_KEY}`,
-              },
-            },
-          );
-
-          if (!response.ok) throw new Error("Failed to fetch Ydoc");
-
-          const arrayBuffer = await response.arrayBuffer();
-
-          // 4. Convert the binary to a Base64 string for safe Postgres storage
-          const base64Ydoc = Buffer.from(arrayBuffer).toString("base64");
-
-          // 5. Save it securely in Neon!
-          await prisma.whiteboard.update({
-            where: { roomId: roomId },
-            data: {
-              latestSnapshot: { yjsData: base64Ydoc },
-            },
-          });
-
-          console.log(`✅ Successfully backed up canvas: ${roomId}`);
-        } catch (error) {
-          console.error(`❌ Failed to backup canvas ${roomId}:`, error);
-          // Return 200 anyway so Liveblocks doesn't keep retrying and crashing
-        }
+        // 🟢 FIRE AND FORGET! Send to BullMQ
+        await canvasQueue.add(
+          "sync-board",
+          { roomId },
+          {
+            // If they draw 50 times in 5 seconds, this overwrites the job
+            // so we only download the canvas ONCE when they finish!
+            jobId: `sync-${roomId}`,
+            delay: 5000,
+            removeOnComplete: true,
+          },
+        );
       }
 
+      // Instantly return 200 so Liveblocks is happy
       return reply.code(200).send("Webhook processed");
     },
   );
+
+  fastify.delete(
+    "/:roomId",
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN"])] },
+    async (request, reply) => {
+      const { roomId } = request.params as { roomId: string };
+
+      try {
+        // 1. Instantly delete the record from your Neon database
+        await prisma.whiteboard.delete({
+          where: { roomId: roomId },
+        });
+
+        // 🟢 2. FIRE AND FORGET! Tell BullMQ to clean up the Liveblocks servers
+        await cleanupQueue.add("delete-liveblocks-room", {
+          roomId: roomId,
+        });
+
+        return reply
+          .code(200)
+          .send({ message: "Whiteboard permanently deleted" });
+      } catch (error) {
+        console.error("Failed to delete whiteboard:", error);
+        return reply
+          .code(500)
+          .send({ message: "Failed to delete whiteboard", error });
+      }
+    },
+  );
 }
+

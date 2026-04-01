@@ -10,7 +10,7 @@ import { buildServer } from "./server.js";
 // As you requested, this log will confirm if the variables are loaded.
 console.log(`[api entry] GOOGLE_ID_CHECK: ${process.env.GOOGLE_CLIENT_ID ? "LOADED" : "NOT FOUND"}`);
 
-
+console.log("🔍 REDIS_URL IS:", process.env.REDIS_URL);
 
 
 const PORT = Number(process.env.API_PORT ?? 4000);

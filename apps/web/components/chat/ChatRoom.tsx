@@ -93,7 +93,7 @@ export default function ChatRoom({ channelId }: { channelId: string }) {
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isHuddleActive, setIsHuddleActive] = useState(false);
-  const [channel, setChannel] = useState<{ name: string } | null>(null);
+  const [channel, setChannel] = useState<{ name?: string; type?: string } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 

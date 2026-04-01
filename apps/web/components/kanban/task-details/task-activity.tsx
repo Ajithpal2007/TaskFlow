@@ -29,31 +29,20 @@ interface TaskActivityProps {
 }
 
 const mentionsStyles = {
-  control: { fontSize: 14, fontWeight: "normal" },
+  control: {
+    fontSize: 14,
+    fontWeight: "normal",
+  },
+  highlighter: {
+    padding: "8px", 
+  },
   input: {
-    padding: "8px 12px",
-    border: "1px solid hsl(var(--border))",
-    borderRadius: "calc(var(--radius) - 2px)",
-    backgroundColor: "transparent",
+    padding: "8px",
     outline: "none",
-    minHeight: "80px",
+    border: "none",
+    color: "inherit", 
   },
-  suggestions: {
-    list: {
-      backgroundColor: "hsl(var(--popover))",
-      border: "1px solid hsl(var(--border))",
-      borderRadius: "var(--radius)",
-      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-      fontSize: 14,
-      zIndex: 100,
-    },
-    item: {
-      padding: "8px 12px",
-      borderBottom: "1px solid hsl(var(--border)/0.5)",
-      color: "hsl(var(--foreground))",
-      "&focused": { backgroundColor: "hsl(var(--muted))" },
-    },
-  },
+ 
 };
 
 const renderCommentText = (text: string) => {
@@ -307,20 +296,36 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
             <User className="h-4 w-4 text-primary" />
           </div>
           <div className="flex-1 space-y-2">
+           <div className="flex-1 space-y-2 relative">
             <MentionsInput
+              className="task-mentions" // 🟢 Crucial for the CSS below
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={handleKeyDown}
-              style={mentionsStyles}
               placeholder="Write a comment... Type @ to mention someone. (Cmd+Enter to save)"
+              // 🔴 NO style PROP AT ALL!
             >
               <Mention
                 trigger="@"
                 data={mentionData}
                 displayTransform={(id, display) => `@${display}`}
-                style={{ backgroundColor: "hsl(var(--primary)/10)", color: "hsl(var(--primary))", borderRadius: "2px" }}
+                renderSuggestion={(suggestion, search, highlightedDisplay, index, focused) => (
+                  <div
+                    // 🟢 THE FIX: Explicit text and hover colors to guarantee visibility
+                    className={`px-2 py-1.5 text-sm rounded-sm transition-colors cursor-pointer ${
+                      focused
+                        ? "bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white"
+                        : "bg-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800/50"
+                    }`}
+                  >
+                    {suggestion.display}
+                  </div>
+                )}
               />
             </MentionsInput>
+            
+           
+              
             
             {/* 🟢 THE FIX: relative and z-50 forces the button above the invisible text layer! */}
             <div className="flex justify-end relative z-50 pt-2">
@@ -337,6 +342,7 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
               >
                 {isAddingComment ? "Posting..." : "Save"}
               </Button>
+            </div>
             </div>
           </div>
         </div>

@@ -2,6 +2,8 @@ import { FastifyInstance } from "fastify";
 import { requireAuth } from "../../middleware/require-auth.js";
 import { streamText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
+import { requireWorkspaceRole } from "@/middleware/require-role.js";
+import { requirePlan } from "@/middleware/require-plan.js";
 
 // Configure the AI provider to use Groq's Llama 3
 const groq = createOpenAI({
@@ -14,7 +16,11 @@ export default async function aiRoutes(fastify: FastifyInstance) {
   fastify.post(
     "/generate-task",
     {
-      preHandler: [requireAuth],
+      preHandler: [
+        requireAuth,
+        requireWorkspaceRole(["ADMIN", "MEMBER"]),
+        requirePlan(["PRO", "ENTERPRISE"]),
+      ],
       config: {
         rateLimit: {
           max: 5, // Only 5 AI generations...
@@ -63,3 +69,4 @@ export default async function aiRoutes(fastify: FastifyInstance) {
     },
   );
 }
+

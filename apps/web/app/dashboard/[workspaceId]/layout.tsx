@@ -16,6 +16,8 @@ import { useRouter } from "next/navigation";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
+
 export default function WorkspaceLayout({
   children,
   params,
@@ -31,6 +33,24 @@ export default function WorkspaceLayout({
   // 2. Fetch Workspaces (only runs if they are logged in)
   const { data: workspaces } = useWorkspaces();
   const activeWorkspace = workspaces?.find((w: any) => w.id === params.workspaceId);
+
+  const setCurrentRole = useWorkspaceStore((state) => state.setCurrentRole);
+  const setActiveWorkspaceId = useWorkspaceStore((state) => state.setActiveWorkspaceId);
+
+  // 🟢 NEW: Sync the fetched workspace with Zustand instantly
+  useEffect(() => {
+    if (activeWorkspace) {
+      // 1. Tell Zustand which workspace we are looking at
+      setActiveWorkspaceId(activeWorkspace.id);
+      
+      // 2. Tell Zustand what the user's role is in this specific workspace!
+      // NOTE: Make sure "role" matches exactly what your backend API returns 
+      // (it might be activeWorkspace.userRole, activeWorkspace.myRole, etc.)
+      if (activeWorkspace.role) {
+        setCurrentRole(activeWorkspace.role);
+      }
+    }
+  }, [activeWorkspace, setActiveWorkspaceId, setCurrentRole]);
 
   // 3. The Redirect Logic
   useEffect(() => {

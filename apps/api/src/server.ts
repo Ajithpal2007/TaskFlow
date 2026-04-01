@@ -11,14 +11,15 @@ import { ourFileRouter } from "./lib/uploadthing";
 import { setupWSConnection } from "./lib/yjs-utils.js";
 
 import fastifyRawBody from "fastify-raw-body";
-import fastifyRateLimit from '@fastify/rate-limit';
-import { redisConnection } from './lib/queue';
+import fastifyRateLimit from "@fastify/rate-limit";
+import { redisConnection } from "./lib/queue";
 
-import './workers/notificationWorker';
-import './workers/emailWorker';
-import './workers/canvasWorker';
-import './workers/cleanupWorker';
+import stripeWebhookRoute from "./routes/webhooks/stripe";
 
+import "./workers/notificationWorker";
+import "./workers/emailWorker";
+import "./workers/canvasWorker";
+import "./workers/cleanupWorker";
 
 export async function buildServer() {
   const fastify = Fastify({
@@ -28,19 +29,22 @@ export async function buildServer() {
         : true,
   });
 
+  // Call this right before fastify.listen()
+  
+
   await fastify.register(websocket);
 
   fastify.register(fastifyRateLimit, {
-  global: true, // 🟢 ON BY DEFAULT FOR ALL ROUTES
-  max: 150,     // 150 requests...
-  timeWindow: '1 minute', // ...per minute
-  redis: redisConnection,
-  errorResponseBuilder: (request, context) => ({
-    success: false,
-    message: `Whoa there! You're moving too fast. Please wait ${context.after}.`
-  })
-});
-  
+    global: true, // 🟢 ON BY DEFAULT FOR ALL ROUTES
+    max: 150, // 150 requests...
+    timeWindow: "1 minute", // ...per minute
+    redis: redisConnection,
+    errorResponseBuilder: (request, context) => ({
+      success: false,
+      message: `Whoa there! You're moving too fast. Please wait ${context.after}.`,
+    }),
+  });
+
   await fastify.register(fastifyRawBody, {
     field: "rawBody", // This adds request.rawBody
     global: false, // We only want to use this on specific webhook routes
@@ -110,6 +114,8 @@ export async function buildServer() {
     router: ourFileRouter,
   });
 
+  fastify.register(stripeWebhookRoute, { prefix: "/api/webhooks" });
+
   await fastify.register(import("./routes/workspaces/index.js"), {
     prefix: "/api/workspaces",
   });
@@ -148,6 +154,12 @@ export async function buildServer() {
   await fastify.register(import("./routes/canvas/index.js"), {
     prefix: "/api/canvas",
   });
+
+  await fastify.register(import("./routes/billing/index.js"), {
+    prefix: "/api",
+  });
+
+  
 
   return fastify;
 }

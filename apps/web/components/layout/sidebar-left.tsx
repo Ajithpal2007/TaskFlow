@@ -4,7 +4,7 @@ import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
-import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle,Activity, Presentation } from "lucide-react";
+import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle,Activity, Presentation, CreditCard } from "lucide-react";
 import { useNotifications } from "@/hooks/api/use-notifications";
 
 import {
@@ -41,10 +41,11 @@ import { useCreateDocument } from "@/hooks/api/use-create-document";
 import { Button } from "@repo/ui/components/button";
 
 import { useMoveDocument } from "@/hooks/api/use-move-document";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@repo/ui/src/lib/utils";
 
 import ActivityLogPage from "../../app/dashboard/[workspaceId]/activity/page";
+import Image from "next/image";
  
 export function SidebarLeft() {
   const router = useRouter();
@@ -74,13 +75,22 @@ export function SidebarLeft() {
   const { mutate: moveDocument } = useMoveDocument();
   const [isRootDragOver, setIsRootDragOver] = useState(false);
 
+  const isPro = 
+  activeWorkspace?.planId === "PRO" && 
+  activeWorkspace?.currentPeriodEnd && 
+  new Date(activeWorkspace.currentPeriodEnd) > new Date();
+
+const planName = isPro ? "Pro Plan" : "Free Plan";
+
+
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="pt-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+             <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -92,7 +102,10 @@ export function SidebarLeft() {
                     <span className="truncate font-semibold">
                       {activeWorkspace ? activeWorkspace.name : "Loading..."}
                     </span>
-                    <span className="truncate text-xs text-muted-foreground">Free Plan</span>
+                    {/* 🟢 THE DYNAMIC PLAN BADGE */}
+                    <span className={`truncate text-xs font-medium ${isPro ? "text-primary" : "text-muted-foreground"}`}>
+                      {activeWorkspace ? planName : "..."}
+                    </span>
                   </div>
                   <ChevronsUpDown className="ml-auto size-4 shrink-0 group-data-[collapsible=icon]:hidden" />
                 </SidebarMenuButton>
@@ -210,6 +223,17 @@ export function SidebarLeft() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )*/}
+
+            {activeWorkspace && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.includes("/billing")}>
+                  <Link href={`/dashboard/${activeWorkspace.id}/billing`}>
+                    <CreditCard className="h-4 w-4 shrink-0" />
+                    <span className="group-data-[collapsible=icon]:hidden">Billing & Plans</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
 
 
             <SidebarMenuItem>
@@ -376,7 +400,7 @@ export function SidebarLeft() {
                   {/* 🟢 Added overflow hidden to prevent Avatar corners from poking out */}
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-lg overflow-hidden">
                     {user?.image ? (
-                      <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
+                      <Image width={32} height={32} src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
                     ) : (
                       user?.name?.charAt(0).toUpperCase() || "U"
                     )}
@@ -398,7 +422,7 @@ export function SidebarLeft() {
                 <div className="flex items-center gap-2 p-2">
                   <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold overflow-hidden">
                     {user?.image ? (
-                      <img src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
+                      <Image width={32} height={32} src={user.image} alt={user.name || "User"} className="h-full w-full object-cover" />
                     ) : (
                       user?.name?.charAt(0).toUpperCase() || "U"
                     )}

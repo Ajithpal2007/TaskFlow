@@ -18,51 +18,50 @@ export const workspaceService = {
   },
 
  async getWorkspaceBySlug(slug: string, userId: string) {
-  return await prisma.workspace.findFirst({
-    where: {
-      // 🟢 1. Search by EITHER slug OR id
-      OR: [
-        { slug: slug },
-        { id: slug }
-      ],
-      members: {
-        some: { userId },
+    const workspace = await prisma.workspace.findFirst({
+      where: {
+        OR: [{ slug: slug }, { id: slug }],
+        members: { some: { userId } },
       },
-    },
-    include: {
-      // 🟢 2. Fetch the members AND their user data (names/emails)
-      members: {
-        include: {
-          user: true 
-        }
+      include: {
+        members: { include: { user: true } },
+        _count: { select: { projects: true } },
       },
-      _count: {
-        select: {
-          projects: true,
-        },
-      },
-    },
-  });
-},
+    });
+
+    if (!workspace) return null;
+
+    // 🟢 THE FIX: Find the current user in the members array
+    const myMembership = workspace.members.find(m => m.userId === userId);
+
+    // 🟢 Inject their specific role at the top level of the object
+    return {
+      ...workspace,
+      role: myMembership?.role || null, 
+    };
+  },
 
   /**
    * Fetch all workspaces a user is a member of
    */
   getUserWorkspaces: async (userId: string) => {
-    // We query the Workspace table, but filter it by checking if the 
-    // connected 'members' array contains this specific user.
-    return await prisma.workspace.findMany({
+    const workspaces = await prisma.workspace.findMany({
       where: {
-        members: {
-          some: {
-            userId: userId
-          }
-        }
+        members: { some: { userId: userId } }
       },
       include: { members: { include: { user: true } } },
-      orderBy: {
-        createdAt: "desc" // Shows the newest workspaces first
-      }
+      orderBy: { createdAt: "desc" }
+    });
+
+    // 🟢 THE FIX: Loop through all the workspaces and attach the role
+    return workspaces.map((workspace) => {
+      // Find the membership for this specific user
+      const myMembership = workspace.members.find(m => m.userId === userId);
+
+      return {
+        ...workspace,
+        role: myMembership?.role || null, // Inject it at the top level
+      };
     });
   },
 
@@ -107,6 +106,5 @@ export const workspaceService = {
       },
     });
   },
-
-
 };
+

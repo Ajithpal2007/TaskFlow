@@ -14,7 +14,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "$12",
+    price: "$8",
     period: "/user/mo",
     desc: "For growing teams that need full power.",
     features: ["Unlimited members", "WebRTC calls", "40+ integrations", "Automation workflows", "Priority support"],

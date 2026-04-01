@@ -16,40 +16,66 @@ const liveblocks = new Liveblocks({
 export default async function canvasRoutes(fastify: FastifyInstance) {
   // 🟢 1. CREATE A NEW WHITEBOARD
   // This matches the apiClient.post(`/canvas/workspaces/${workspaceId}`) from your frontend
-  fastify.post(
-    "/workspaces/:workspaceId",
-    {
-      preHandler: [
-        requireAuth,
-        requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"]),
-      ],
-    },
-    async (request, reply) => {
-      const { workspaceId } = request.params as { workspaceId: string };
-      const { title } = request.body as { title: string };
-      const userId = (request as any).user.id;
+ fastify.post(
+  "/workspaces/:workspaceId/canvas", // 🟢 FIX 2: Added /canvas to the route URL
+  {
+    preHandler: [
+      requireAuth,
+      requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"]),
+    ],
+  },
+  async (request, reply) => {
+    const { workspaceId } = request.params as { workspaceId: string };
+    const { title } = request.body as { title?: string }; // Make title optional just in case
+    const userId = (request as any).user.id;
 
-      try {
-        // Generate a unique, unguessable Room ID for Liveblocks
-        const roomId = `room_${crypto.randomBytes(16).toString("hex")}`;
+    try {
+      // 1. Fetch the workspace and the current whiteboard count
+      const workspace = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        include: { _count: { select: { whiteboards: true } } },
+      });
 
-        // Save it to your PostgreSQL database via Prisma
-        const newBoard = await prisma.whiteboard.create({
-          data: {
-            title: title || "Untitled Canvas",
-            workspaceId,
-            roomId,
-            createdById: userId,
-          },
-        });
-
-        return reply.code(200).send({ success: true, data: newBoard });
-      } catch (error) {
-        console.error("Failed to create whiteboard:", error);
-        return reply.code(500).send({ message: "Internal Server Error" });
+      // 🟢 FIX 1: If the workspace doesn't exist, kick them out immediately!
+      if (!workspace) {
+        return reply.code(404).send({ message: "Workspace not found" });
       }
-    },
-  );
+
+      // 2. Check their plan status safely
+      const isPro =
+        workspace.planId === "PRO" &&
+        workspace.currentPeriodEnd &&
+        new Date() < workspace.currentPeriodEnd;
+
+      // 3. THE FREEMIUM CHECK
+      if (!isPro && workspace._count.whiteboards >= 3) {
+        return reply.code(402).send({
+          error: "Payment Required",
+          message: "Free workspaces are limited to 3 whiteboards. Upgrade to Pro for unlimited!",
+        });
+      }
+
+      // 4. Generate a unique, unguessable Room ID for Liveblocks
+      const roomId = `room_${crypto.randomBytes(16).toString("hex")}`;
+
+      // 5. Save it to your PostgreSQL database
+      const newBoard = await prisma.whiteboard.create({
+        data: {
+          title: title || "Untitled Canvas",
+          workspaceId,
+          roomId,
+          createdById: userId,
+        },
+      });
+
+      return reply.code(200).send({ success: true, data: newBoard });
+
+    } catch (error) {
+      console.error("Failed to create whiteboard:", error);
+      return reply.code(500).send({ message: "Internal Server Error" });
+    }
+  }
+);
 
   // 🟢 2. LIVEBLOCKS AUTHENTICATION ENDPOINT
   // 🟢 LIVEBLOCKS AUTHENTICATION WITH ENFORCED RBAC

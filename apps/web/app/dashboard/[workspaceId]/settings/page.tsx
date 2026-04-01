@@ -219,6 +219,7 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
           </CardContent>
         </Card>
 
+
         {/* --- DANGER ZONE (ONLY VISIBLE TO ADMINS/OWNERS) --- */}
         {canManageInvites && (
           <Card className="border-destructive/50 mt-12">

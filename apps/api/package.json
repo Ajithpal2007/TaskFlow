@@ -34,6 +34,8 @@
     "livekit-server-sdk": "^2.15.0",
     "node-fetch": "^3.3.2",
     "nodemailer": "^8.0.3",
+    "razorpay": "^2.9.6",
+    "stripe": "^21.0.1",
     "uploadthing": "^7.7.4",
     "ws": "^8.19.0",
     "y-websocket": "^3.0.0",

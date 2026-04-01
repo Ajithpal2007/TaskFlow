@@ -15,6 +15,9 @@ console.log("🔍 REDIS_URL IS:", process.env.REDIS_URL);
 
 const PORT = Number(process.env.API_PORT ?? 4000);
 
+// Call this right before fastify.listen()
+ 
+
 async function start() {
   try {
     const server = await buildServer();

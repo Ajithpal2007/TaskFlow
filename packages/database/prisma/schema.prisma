@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
@@ -97,6 +97,11 @@ enum CallRole {
   GUEST // View-only (Webinar style)
 }
 
+enum PaymentProvider {
+  STRIPE
+  RAZORPAY
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String
@@ -190,6 +195,22 @@ model Workspace {
   name      String
   slug      String   @unique // For URLs: taskflow.com/acme-corp
   logo      String?
+
+
+  planId                 String?           // e.g., "PRO", "ENTERPRISE"
+  paymentProvider        PaymentProvider?  // Tracks how they paid
+  currentPeriodEnd       DateTime?         // When their access expires
+
+  // 🟢 STRIPE FIELDS (For International)
+  stripeCustomerId       String?   @unique 
+  stripeSubscriptionId   String?   @unique 
+  
+  // 🟢 RAZORPAY FIELDS (For India/UPI)
+  razorpayCustomerId     String?   @unique
+  razorpaySubscriptionId String?   @unique
+
+  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

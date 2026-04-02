@@ -575,5 +575,35 @@ export default async function workspaceRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  // POST /api/workspaces/:workspaceId/api-key
+fastify.post("/:workspaceId/api-key", async (request, reply) => {
+  const { workspaceId } = request.params as { workspaceId: string };
+  
+  // Generate a secure, random 32-character API key
+  const newApiKey = "tf_" + crypto.randomBytes(24).toString("hex");
+
+  const updatedWorkspace = await prisma.workspace.update({
+    where: { id: workspaceId },
+    data: { apiKey: newApiKey },
+  });
+
+  return reply.send({ apiKey: updatedWorkspace.apiKey });
+});
+
+// 🟢 SAVE ZAPIER WEBHOOK URL
+  fastify.patch("/:workspaceId/webhook", async (request, reply) => {
+    const { workspaceId } = request.params as { workspaceId: string };
+    const { webhookUrl } = request.body as { webhookUrl: string };
+
+    const updatedWorkspace = await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { zapierWebhookUrl: webhookUrl },
+    });
+
+    return reply.send({ success: true, url: updatedWorkspace.zapierWebhookUrl });
+  });
+
+  
 }
 

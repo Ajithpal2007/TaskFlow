@@ -5,14 +5,16 @@ import { useState, useEffect } from "react";
 import { useWorkspace, useUpdateWorkspace, useInviteMember } from "@/hooks/api/use-workspace";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/app/lib/api-client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@repo/ui/components/button";
 import { Input } from "@repo/ui/components/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@repo/ui/components/card";
 import { Separator } from "@repo/ui/components/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui/components/select";
-import { UserPlus, Settings2, Users, ShieldAlert, Trash2 } from "lucide-react";
+import { UserPlus, Settings2, Users, ShieldAlert, Trash2, MessageSquare } from "lucide-react";
+import { toast } from "sonner";
+import ZapierIntegration from "@/components/settings/ZapierIntegration";
 
 export default function WorkspaceSettingsPage({ params }: { params: { workspaceId: string } }) {
   const queryClient = useQueryClient();
@@ -63,6 +65,20 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
   useEffect(() => {
     if (workspace?.name) setWorkspaceName(workspace.name);
   }, [workspace?.name]);
+
+  const searchParams = useSearchParams();
+  const slackStatus = searchParams.get("slack");
+
+  useEffect(() => {
+    if (slackStatus === "success") {
+      toast.success("Slack connected successfully!");
+    } else if (slackStatus === "error") {
+      toast.error("Failed to connect to Slack.");
+    }
+  }, [slackStatus]);
+
+
+
 
   if (isLoading && !workspace) return <div className="p-10 text-muted-foreground">Loading settings...</div>;
 
@@ -249,6 +265,24 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
             </CardFooter>
           </Card>
         )}
+
+
+
+        <div className="p-6 border rounded-lg mt-8 bg-card">
+          <h3 className="text-lg font-semibold mb-2">Integrations</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Connect TaskFlow to your favorite tools to keep your team in sync.
+          </p>
+
+          <a href={`http://localhost:4000/api/integrations/slack/connect/${params.workspaceId}`}>
+            <Button variant="outline" className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Connect to Slack
+            </Button>
+          </a>
+        </div>
+
+        <ZapierIntegration workspaceId={params.workspaceId} />
 
 
       </div>

@@ -6,11 +6,10 @@ import {
 } from "@repo/validators";
 import { taskService } from "../../services/task.service.js";
 import { requireAuth } from "../../middleware/require-auth.js";
-import { prisma,NotificationType, PrismaClient } from "@repo/database";
+import { prisma, NotificationType, PrismaClient } from "@repo/database";
 
-
- import { notificationQueue } from "../../lib/queue"; 
-
+import { notificationQueue } from "../../lib/queue";
+import { slackService } from "@services/slackService.js";
 
 export default async function taskRoutes(fastify: FastifyInstance) {
   // 1. Get all tasks for a specific project
@@ -49,9 +48,7 @@ export default async function taskRoutes(fastify: FastifyInstance) {
     },
   );
 
-  
-
-fastify.patch(
+  fastify.patch(
     "/:taskId",
     {
       preHandler: requireAuth,
@@ -67,7 +64,7 @@ fastify.patch(
 
         const userId = (request as any).user.id;
         const oldTask = await prisma.task.findUnique({ where: { id: taskId } });
-        
+
         // 1. Do the core database update as fast as possible
         const updatedTask = await taskService.updateTask(
           taskId,
@@ -75,15 +72,15 @@ fastify.patch(
           result.data,
         );
 
-        // 2. FIRE AND FORGET! 
+        // 2. FIRE AND FORGET!
         // If the assignee changed, push a job to Redis and walk away.
         if (
-          result.data.assigneeId && 
-          result.data.assigneeId !== oldTask?.assigneeId && 
+          result.data.assigneeId &&
+          result.data.assigneeId !== oldTask?.assigneeId &&
           result.data.assigneeId !== userId
         ) {
           await notificationQueue.add(
-            'task-assigned', // The name of the job
+            "task-assigned", // The name of the job
             {
               taskId: taskId,
               newAssigneeId: result.data.assigneeId,
@@ -92,13 +89,55 @@ fastify.patch(
             },
             {
               // 🟢 THE ENTERPRISE SECRET: DEBOUNCING
-              // By setting a specific jobId, if you assign this task to someone else 
+              // By setting a specific jobId, if you assign this task to someone else
               // 5 seconds later, BullMQ prevents duplicate jobs from flooding the queue!
-              jobId: `assign-notification-${taskId}`, 
+              jobId: `assign-notification-${taskId}`,
               delay: 30000, // Wait 30 seconds before processing, just in case they change their mind
               removeOnComplete: true, // Keep Redis memory clean
-            }
+            },
           );
+        }
+
+        // If the task status was explicitly changed to DONE
+        if (result.data.status === "DONE" && oldTask?.status !== "DONE") {
+          const workspaceId = updatedTask.project.workspaceId;
+
+          // 1. SLACK NOTIFICATION
+          console.log("🔔 [SLACK TRIGGER] Task moved to DONE!");
+          slackService.notifyWorkspace(
+            workspaceId,
+            `✅ *Task Completed:* Someone just finished the task "${updatedTask.title}"!`,
+          );
+
+          // 2. FETCH WORKSPACE FOR ZAPIER
+          // We must quickly fetch the workspace to grab the secret Webhook URL
+          const workspace = await prisma.workspace.findUnique({
+            where: { id: workspaceId },
+            select: { name: true, zapierWebhookUrl: true },
+          });
+
+          // 3. ZAPIER TRIGGER
+          if (workspace?.zapierWebhookUrl) {
+            console.log(
+              `🚀 Firing webhook to Zapier for task: ${updatedTask.title}`,
+            );
+
+            // Fire and forget!
+            fetch(workspace.zapierWebhookUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                event: "task_completed",
+                task: {
+                  id: updatedTask.id,
+                  title: updatedTask.title,
+                  description: updatedTask.description,
+                  completedAt: new Date().toISOString(),
+                },
+                workspace: workspace.name,
+              }),
+            }).catch((err) => console.error("Webhook failed to send:", err));
+          }
         }
 
         // 3. Return to the frontend instantly!
@@ -109,9 +148,6 @@ fastify.patch(
       }
     },
   );
-
-
-
 
   // 4. Get full details of a single task (For the "Edit" modal)
   // GET /api/tasks/:taskId
@@ -131,56 +167,56 @@ fastify.patch(
     }
   });
 
- fastify.post(
-  "/:taskId/comments",
-  { preHandler: [requireAuth] },
-  async (req, reply) => {
-    const { taskId } = req.params as { taskId: string };
-    const { content } = req.body as { content: string };
-    
-    const userId = (req as any).user.id;
-    const userName = (req as any).user.name || "Someone"; 
+  fastify.post(
+    "/:taskId/comments",
+    { preHandler: [requireAuth] },
+    async (req, reply) => {
+      const { taskId } = req.params as { taskId: string };
+      const { content } = req.body as { content: string };
 
-    try {
-      // 1. Save the comment fast
-      const comment = await taskService.addComment(taskId, content, userId);
+      const userId = (req as any).user.id;
+      const userName = (req as any).user.name || "Someone";
 
-      // 2. Parse the mentions
-      const mentionRegex = /@\[.*?\]\((.*?)\)/g;
-      let match;
-      const mentionedUserIds = new Set<string>();
+      try {
+        // 1. Save the comment fast
+        const comment = await taskService.addComment(taskId, content, userId);
 
-      while ((match = mentionRegex.exec(content)) !== null) {
-        mentionedUserIds.add(match[1]); 
+        // 2. Parse the mentions
+        const mentionRegex = /@\[.*?\]\((.*?)\)/g;
+        let match;
+        const mentionedUserIds = new Set<string>();
+
+        while ((match = mentionRegex.exec(content)) !== null) {
+          mentionedUserIds.add(match[1]);
+        }
+
+        // 3. FIRE AND FORGET! Send to Redis
+        if (mentionedUserIds.size > 0) {
+          await notificationQueue.add(
+            "user-mentioned", // The job name
+            {
+              taskId: taskId,
+              actorName: userName,
+              mentionedUserIds: Array.from(mentionedUserIds), // Pass the array of IDs
+              commentId: comment.id,
+              snippet: content.substring(0, 50) + "...", // Optional: give them context
+            },
+            {
+              // For mentions, we usually want them immediately. No long delay needed.
+              // But we still offload the DB work so the UI is fast.
+              removeOnComplete: true,
+            },
+          );
+        }
+
+        // 4. Return to frontend instantly
+        return reply.send({ success: true, data: comment });
+      } catch (error) {
+        console.error("Failed to post comment:", error);
+        return reply.status(500).send({ error: "Internal Server Error" });
       }
-
-      // 3. FIRE AND FORGET! Send to Redis
-      if (mentionedUserIds.size > 0) {
-        await notificationQueue.add(
-          'user-mentioned', // The job name
-          {
-            taskId: taskId,
-            actorName: userName,
-            mentionedUserIds: Array.from(mentionedUserIds), // Pass the array of IDs
-            commentId: comment.id, 
-            snippet: content.substring(0, 50) + "..." // Optional: give them context
-          },
-          {
-            // For mentions, we usually want them immediately. No long delay needed.
-            // But we still offload the DB work so the UI is fast.
-            removeOnComplete: true, 
-          }
-        );
-      }
-
-      // 4. Return to frontend instantly
-      return reply.send({ success: true, data: comment });
-    } catch (error) {
-      console.error("Failed to post comment:", error); 
-      return reply.status(500).send({ error: "Internal Server Error" });
-    }
-  },
-);
+    },
+  );
 
   // 5. Delete a task
   fastify.delete("/:taskId", async (request, reply) => {
@@ -300,34 +336,37 @@ fastify.patch(
 
   // POST /tasks/:taskId/links
   // POST /tasks/:taskId/links
-fastify.post("/:taskId/links", async (request, reply) => {
-  const { taskId } = request.params as { taskId: string };
-  
-  // 🟢 1. Accept all 4 types, and grab 'type' (or 'linkType' fallback) from our Shotgun payload
-  const { targetTaskId, type, linkType } = request.body as { 
-    targetTaskId: string, 
-    type?: "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO" | "DUPLICATES",
-    linkType?: "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO" | "DUPLICATES"
-  };
+  fastify.post("/:taskId/links", async (request, reply) => {
+    const { taskId } = request.params as { taskId: string };
 
-  if (taskId === targetTaskId) return reply.status(400).send({ error: "Cannot link a task to itself." });
+    // 🟢 1. Accept all 4 types, and grab 'type' (or 'linkType' fallback) from our Shotgun payload
+    const { targetTaskId, type, linkType } = request.body as {
+      targetTaskId: string;
+      type?: "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO" | "DUPLICATES";
+      linkType?: "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO" | "DUPLICATES";
+    };
 
-  const finalType = type || linkType || "BLOCKS";
+    if (taskId === targetTaskId)
+      return reply.status(400).send({ error: "Cannot link a task to itself." });
 
-  try {
-    // 🟢 2. Pass it to your elite service! This handles all the ID flipping and Database typing perfectly.
-    const dependency = await taskService.linkTasks(
-      taskId,
-      targetTaskId,
-      finalType
-    );
-    
-    return reply.send({ success: true, data: dependency });
-  } catch (error) {
-    console.error("Link Error:", error);
-    return reply.status(400).send({ error: "Failed to link tasks. Link might already exist." });
-  }
-});
+    const finalType = type || linkType || "BLOCKS";
+
+    try {
+      // 🟢 2. Pass it to your elite service! This handles all the ID flipping and Database typing perfectly.
+      const dependency = await taskService.linkTasks(
+        taskId,
+        targetTaskId,
+        finalType,
+      );
+
+      return reply.send({ success: true, data: dependency });
+    } catch (error) {
+      console.error("Link Error:", error);
+      return reply
+        .status(400)
+        .send({ error: "Failed to link tasks. Link might already exist." });
+    }
+  });
 
   // DELETE /tasks/:taskId/links/:targetTaskId
   fastify.delete("/:taskId/links/:targetTaskId", async (request, reply) => {
@@ -352,40 +391,36 @@ fastify.post("/:taskId/links", async (request, reply) => {
     }
   });
 
-
   // 🟢 Make sure the URL parameter matches what your other routes use (usually :id or :taskId)
-  fastify.post(
-    "/:id/attachments", 
-    async (request, reply) => {
-      // Grab the ID from the URL params
-      const { id } = request.params as { id: string };
-      const body = request.body as any;
-      
-      console.log(`\n🛸 BACKEND HIT: Received attachment for Task: ${id}`);
+  fastify.post("/:id/attachments", async (request, reply) => {
+    // Grab the ID from the URL params
+    const { id } = request.params as { id: string };
+    const body = request.body as any;
 
-      try {
-        const attachment = await prisma.attachment.create({
-          data: {
-            name: body.name,
-            url: body.url,
-            size: body.size.toString(), // Save as string or format to MB
-            type: body.type,
-            taskId: id, // Link it to the task
-          },
-        });
-        return reply.send({ data: attachment });
-      } catch (error) {
-        console.error("❌ BACKEND PRISMA ERROR:", error);
-        return reply.status(500).send({ error: "Failed to save attachment" });
-      }
+    console.log(`\n🛸 BACKEND HIT: Received attachment for Task: ${id}`);
+
+    try {
+      const attachment = await prisma.attachment.create({
+        data: {
+          name: body.name,
+          url: body.url,
+          size: body.size.toString(), // Save as string or format to MB
+          type: body.type,
+          taskId: id, // Link it to the task
+        },
+      });
+      return reply.send({ data: attachment });
+    } catch (error) {
+      console.error("❌ BACKEND PRISMA ERROR:", error);
+      return reply.status(500).send({ error: "Failed to save attachment" });
     }
-  );
+  });
 
   // 🟢 TOGGLE WATCHER ROUTE
   fastify.post(
     "/:id/watch",
     // Make sure your requireAuth middleware is here so we know WHO is clicking the button!
-    { preHandler: [requireAuth] }, 
+    { preHandler: [requireAuth] },
     async (request, reply) => {
       const { id: taskId } = request.params as { id: string };
       const userId = (request as any).user.id;
@@ -394,7 +429,7 @@ fastify.post("/:taskId/links", async (request, reply) => {
         // 1. Check if the user is currently watching this task
         const task = await prisma.task.findUnique({
           where: { id: taskId },
-          select: { watchers: { where: { id: userId } } }
+          select: { watchers: { where: { id: userId } } },
         });
 
         if (!task) return reply.status(404).send({ error: "Task not found" });
@@ -406,21 +441,23 @@ fastify.post("/:taskId/links", async (request, reply) => {
           // Unwatch: Disconnect the user
           await prisma.task.update({
             where: { id: taskId },
-            data: { watchers: { disconnect: { id: userId } } }
+            data: { watchers: { disconnect: { id: userId } } },
           });
           return reply.send({ watching: false });
         } else {
           // Watch: Connect the user
           await prisma.task.update({
             where: { id: taskId },
-            data: { watchers: { connect: { id: userId } } }
+            data: { watchers: { connect: { id: userId } } },
           });
           return reply.send({ watching: true });
         }
       } catch (error) {
-        return reply.status(500).send({ error: "Failed to toggle watcher status" });
+        return reply
+          .status(500)
+          .send({ error: "Failed to toggle watcher status" });
       }
-    }
+    },
   );
 
   // 🟢 1. GET ALL TASKS FOR A WORKSPACE
@@ -429,22 +466,23 @@ fastify.post("/:taskId/links", async (request, reply) => {
     { preHandler: [requireAuth] }, // Assuming you use this middleware!
     async (request, reply) => {
       const { workspaceId } = request.params as { workspaceId: string };
-      
+
       try {
         const tasks = await prisma.task.findMany({
-          where: { 
-            project: { workspaceId: workspaceId }
+          where: {
+            project: { workspaceId: workspaceId },
           },
           orderBy: { createdAt: "desc" },
         });
         return reply.code(200).send({ data: tasks });
       } catch (error) {
-        return reply.code(500).send({ message: "Failed to fetch workspace tasks", error });
+        return reply
+          .code(500)
+          .send({ message: "Failed to fetch workspace tasks", error });
       }
-    }
+    },
   );
 
   // 🟢 2. GET ALL TASKS FOR A SPECIFIC PROJECT
- 
-};
+}
 

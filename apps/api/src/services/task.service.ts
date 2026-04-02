@@ -5,7 +5,7 @@ export const taskService = {
   /**
    * Create a new task with an auto-incrementing Sequence ID per project
    */
-  
+
   async createTask(data: CreateTaskInput, creatorId: string) {
     // 1. Start a transaction to ensure atomicity
     return await prisma.$transaction(async (tx) => {
@@ -42,7 +42,7 @@ export const taskService = {
   /**
    * Fetch all tasks for a project, grouped for the Kanban board
    */
- async getTasksByProjectId(projectId: string) {
+  async getTasksByProjectId(projectId: string) {
     try {
       return await prisma.task.findMany({
         where: { projectId },
@@ -51,14 +51,14 @@ export const taskService = {
           project: { select: { identifier: true } },
           assignee: { select: { id: true, name: true, image: true } },
           // Moved comments inside!
-          comments: { 
-            select: { id: true } 
+          comments: {
+            select: { id: true },
           },
           // Added subtasks so your card progress counters work!
           subtasks: {
-            select: { id: true, status: true } 
+            select: { id: true, status: true },
           },
-          tags: { select: { id: true, name: true } }
+          tags: { select: { id: true, name: true } },
         },
         orderBy: { createdAt: "desc" },
       });
@@ -83,7 +83,9 @@ export const taskService = {
         ...(data.status && { status: data.status }),
         ...(data.priority && { priority: data.priority }),
         ...(data.title && { title: data.title }),
-        ...(data.description !== undefined && { description: data.description }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
         ...(data.assigneeId !== undefined && { assigneeId: data.assigneeId }),
         ...(data.dueDate !== undefined && { dueDate: data.dueDate }),
         ...(data.tags && {
@@ -92,45 +94,66 @@ export const taskService = {
           },
         }),
         ...(data.type && { type: data.type }),
-        ...(data.storyPoints !== undefined && { storyPoints: data.storyPoints }),
-        ...(data.parentTaskId !== undefined && { parentTaskId: data.parentTaskId }),
+        ...(data.storyPoints !== undefined && {
+          storyPoints: data.storyPoints,
+        }),
+        ...(data.parentTaskId !== undefined && {
+          parentTaskId: data.parentTaskId,
+        }),
       },
       include: {
-        project: { select: { identifier: true } },
+        project: { select: { identifier: true ,workspaceId: true} },
         assignee: { select: { name: true, image: true } },
-      }
+      },
     });
 
     // 3. The Diffing Engine: Figure out what changed
     const logsToCreate = [];
 
     if (data.status && data.status !== oldTask.status) {
-      logsToCreate.push({ action: "STATUS_CHANGED", oldValue: oldTask.status, newValue: data.status });
+      logsToCreate.push({
+        action: "STATUS_CHANGED",
+        oldValue: oldTask.status,
+        newValue: data.status,
+      });
     }
     if (data.priority && data.priority !== oldTask.priority) {
-      logsToCreate.push({ action: "PRIORITY_CHANGED", oldValue: oldTask.priority, newValue: data.priority });
+      logsToCreate.push({
+        action: "PRIORITY_CHANGED",
+        oldValue: oldTask.priority,
+        newValue: data.priority,
+      });
     }
     if (data.type && data.type !== oldTask.type) {
-      logsToCreate.push({ action: "TYPE_CHANGED", oldValue: oldTask.type, newValue: data.type });
+      logsToCreate.push({
+        action: "TYPE_CHANGED",
+        oldValue: oldTask.type,
+        newValue: data.type,
+      });
     }
-    if (data.assigneeId !== undefined && data.assigneeId !== oldTask.assigneeId) {
-      logsToCreate.push({ 
-        action: data.assigneeId ? "ASSIGNEE_ASSIGNED" : "ASSIGNEE_REMOVED", 
-        oldValue: oldTask.assigneeId || "Unassigned", 
-        newValue: data.assigneeId || "Unassigned" 
+    if (
+      data.assigneeId !== undefined &&
+      data.assigneeId !== oldTask.assigneeId
+    ) {
+      logsToCreate.push({
+        action: data.assigneeId ? "ASSIGNEE_ASSIGNED" : "ASSIGNEE_REMOVED",
+        oldValue: oldTask.assigneeId || "Unassigned",
+        newValue: data.assigneeId || "Unassigned",
       });
     }
 
     // 4. Save the logs to the database in bulk
-   if (logsToCreate.length > 0) {
+    if (logsToCreate.length > 0) {
       // 🚨 REMOVE 'await' here and add '.catch()'
-      prisma.activityLog.createMany({
-        data: logsToCreate.map(log => ({
-          ...log,
-          taskId,
-          actorId: userId, 
-        }))
-      }).catch(err => console.error("Failed to save activity logs:", err));
+      prisma.activityLog
+        .createMany({
+          data: logsToCreate.map((log) => ({
+            ...log,
+            taskId,
+            actorId: userId,
+          })),
+        })
+        .catch((err) => console.error("Failed to save activity logs:", err));
     }
 
     return updatedTask;
@@ -145,7 +168,7 @@ export const taskService = {
       include: {
         creator: { select: { name: true } },
         assignee: { select: { name: true, image: true } },
-        
+
         subtasks: {
           orderBy: { createdAt: "asc" }, // Keep them in order
         },
@@ -153,39 +176,39 @@ export const taskService = {
         // 1. Tasks that THIS task is actively blocking
         blocking: {
           include: {
-            blockedBy: { 
-              select: { 
-                id: true, 
-                title: true, 
+            blockedBy: {
+              select: {
+                id: true,
+                title: true,
                 status: true,
                 sequenceId: true,
-                project: { select: { identifier: true } }
-              } 
-            }
-          }
+                project: { select: { identifier: true } },
+              },
+            },
+          },
         },
-        
+
         // 2. Tasks that THIS task is blocked by
         blockedBy: {
           include: {
-            blocking: { 
-              select: { 
-                id: true, 
-                title: true, 
+            blocking: {
+              select: {
+                id: true,
+                title: true,
                 status: true,
                 sequenceId: true,
-                project: { select: { identifier: true } }
-              } 
-            }
-          }
+                project: { select: { identifier: true } },
+              },
+            },
+          },
         },
         parentTask: {
           select: {
             id: true,
             title: true,
             sequenceId: true,
-            project: { select: { identifier: true } }
-          }
+            project: { select: { identifier: true } },
+          },
         },
         comments: {
           orderBy: { createdAt: "desc" },
@@ -197,8 +220,8 @@ export const taskService = {
         },
         attachments: true,
         watchers: {
-          select: { id: true, name: true, image: true }
-        }
+          select: { id: true, name: true, image: true },
+        },
       },
     });
   },
@@ -225,7 +248,6 @@ export const taskService = {
     });
   },
 
-  
   // apps/api/src/services/task.service.ts
 
   async createSubtask(
@@ -274,37 +296,48 @@ export const taskService = {
   /**
    * Links two tasks together with a specific dependency type
    */
-  async linkTasks(blockingId: string, blockedById: string, type: "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO" | "DUPLICATES") {
-    // If the user selects "IS_BLOCKED_BY" in the UI, we just flip the IDs 
+  async linkTasks(
+    blockingId: string,
+    blockedById: string,
+    type: "BLOCKS" | "IS_BLOCKED_BY" | "RELATES_TO" | "DUPLICATES",
+  ) {
+    // If the user selects "IS_BLOCKED_BY" in the UI, we just flip the IDs
     // before saving to keep the database logic clean.
-    const actualBlockingId = type === "IS_BLOCKED_BY" ? blockedById : blockingId;
-    const actualBlockedById = type === "IS_BLOCKED_BY" ? blockingId : blockedById;
-    
+    const actualBlockingId =
+      type === "IS_BLOCKED_BY" ? blockedById : blockingId;
+    const actualBlockedById =
+      type === "IS_BLOCKED_BY" ? blockingId : blockedById;
+
     // Default to BLOCKS or RELATES_TO depending on what was selected
-    const actualType = type === "RELATES_TO" || type === "DUPLICATES" ? type : "BLOCKS";
+    const actualType =
+      type === "RELATES_TO" || type === "DUPLICATES" ? type : "BLOCKS";
 
     return await prisma.taskDependency.create({
       data: {
         blockingId: actualBlockingId,
         blockedById: actualBlockedById,
-        type: actualType
-      }
+        type: actualType,
+      },
     });
   },
 
   // Find tasks by title, excluding the current task
-  async searchProjectTasks(projectId: string, excludeTaskId: string, searchQuery: string = "") {
+  async searchProjectTasks(
+    projectId: string,
+    excludeTaskId: string,
+    searchQuery: string = "",
+  ) {
     return await prisma.task.findMany({
       where: {
         projectId,
         id: { not: excludeTaskId }, // Prevent infinite loops (linking to itself)
-        title: { contains: searchQuery, mode: "insensitive" } // Case-insensitive search
+        title: { contains: searchQuery, mode: "insensitive" }, // Case-insensitive search
       },
       select: {
         id: true,
         title: true,
         sequenceId: true,
-        project: { select: { identifier: true } }
+        project: { select: { identifier: true } },
       },
       take: 15, // Only return top 15 results for UI speed
     });
@@ -312,26 +345,28 @@ export const taskService = {
 
   async getProjectEpics(projectId: string, excludeTaskId: string) {
     return await prisma.task.findMany({
-      where: { 
-        projectId, 
+      where: {
+        projectId,
         type: "EPIC",
-        id: { not: excludeTaskId } // A task cannot be its own parent
+        id: { not: excludeTaskId }, // A task cannot be its own parent
       },
-      select: { id: true, title: true, sequenceId: true, project: { select: { identifier: true } } }
+      select: {
+        id: true,
+        title: true,
+        sequenceId: true,
+        project: { select: { identifier: true } },
+      },
     });
   },
 
   async getTaskActivity(taskId: string) {
     return await prisma.activityLog.findMany({
       where: { taskId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
-        actor: { select: { name: true, image: true } } // Get the user's avatar
-      }
+        actor: { select: { name: true, image: true } }, // Get the user's avatar
+      },
     });
-  }
-
-
-  
+  },
 };
 

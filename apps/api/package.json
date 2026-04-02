@@ -19,6 +19,8 @@
     "@fastify/helmet": "13.0.2",
     "@fastify/rate-limit": "^10.3.0",
     "@fastify/websocket": "^11.2.0",
+    "@langchain/core": "^1.1.38",
+    "@langchain/groq": "^1.1.5",
     "@liveblocks/node": "^3.15.5",
     "@repo/database": "workspace:*",
     "@y/protocols": "1.0.6-0",
@@ -39,7 +41,8 @@
     "uploadthing": "^7.7.4",
     "ws": "^8.19.0",
     "y-websocket": "^3.0.0",
-    "yjs": "^13.6.30"
+    "yjs": "^13.6.30",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@repo/validators": "workspace:*",

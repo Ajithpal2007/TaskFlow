@@ -209,6 +209,14 @@ model Workspace {
   razorpayCustomerId     String?   @unique
   razorpaySubscriptionId String?   @unique
 
+  // 🟢 NEW SLACK FIELDS
+  slackAccessToken String?  // The token used to post messages
+  slackChannelId   String?  // The specific channel they want updates in
+
+  // 🟢 NEW ZAPIER / API FIELDS
+  apiKey           String?  @unique // A secure, random string for Zapier
+  zapierWebhookUrl String?
+
   
 
   createdAt DateTime @default(now())

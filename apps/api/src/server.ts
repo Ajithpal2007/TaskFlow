@@ -159,7 +159,13 @@ export async function buildServer() {
     prefix: "/api",
   });
 
+  await fastify.register(import("./routes/integrations/slack.js"), {
+    prefix: "/api/integrations/slack",
+  });
   
+  await fastify.register(import("./routes/api/zapier.js"), {
+    prefix: "/api/external/zapier",
+  });
 
   return fastify;
 }

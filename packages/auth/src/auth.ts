@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "@repo/database";
-import { redisConnection } from "../../../apps/api/src/lib/queue";
+import { redisConnection,emailQueue } from "../../../apps/api/src/lib/queue";
 
 export const getAuth = () => betterAuth({
     baseURL: process.env.API_URL || "http://localhost:4000",
@@ -52,6 +52,30 @@ export const getAuth = () => betterAuth({
   rateLimit: {
     storage: "secondary-storage",
   },
+
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          console.log(`[BetterAuth] New user created: ${user.email}. Queuing Welcome Email...`);
+          
+          await emailQueue.add(
+            'welcome-email',
+            { 
+              email: user.email, 
+              // Better Auth saves the name if they use Google/Github, otherwise fallback to "there"
+              name: user.name || "there" 
+            },
+            {
+              attempts: 3,
+              backoff: { type: 'exponential', delay: 5000 },
+              removeOnComplete: true,
+            }
+          );
+        }
+      }
+    }
+  }
   
 });
 

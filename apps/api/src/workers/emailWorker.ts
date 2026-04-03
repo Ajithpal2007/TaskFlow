@@ -1,6 +1,7 @@
 import { Worker } from 'bullmq';
 import { redisConnection } from '../lib/queue';
-import { sendInviteEmail,sendDocumentInviteEmail } from "../services/email.service.js";
+import { sendInviteEmail,sendDocumentInviteEmail, sendWelcomeEmail } from "../services/email.service.js";
+
 
 export const emailWorker = new Worker(
   'emails', // Listen to the 'emails' queue
@@ -45,6 +46,12 @@ export const emailWorker = new Worker(
         );
 
         console.log(`✅ Document invite email successfully sent to ${email}`);
+      }
+
+      if (job.name === 'welcome-email') {
+        const { email, name } = job.data;
+        await sendWelcomeEmail(email, name);
+        console.log(`✅ Welcome email successfully sent to ${email}`);
       }
 
     

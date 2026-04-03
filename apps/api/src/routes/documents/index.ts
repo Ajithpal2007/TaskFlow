@@ -292,6 +292,36 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // 🟢 GET RECENT DOCUMENTS
+  fastify.get(
+    "/workspaces/:workspaceId/documents/recent",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
+
+      try {
+        const recentDocs = await prisma.document.findMany({
+          where: {
+            workspaceId,
+          },
+          // Sort by the most recently updated!
+          orderBy: {
+            updatedAt: "desc", 
+          },
+          take: 5, // Just grab the top 5 for the dashboard
+          include: {
+            author: { select: { id: true, name: true, image: true } }
+          }
+        });
+
+        return reply.code(200).send({ data: recentDocs });
+      } catch (error) {
+        console.error("Failed to fetch recent documents:", error);
+        return reply.code(500).send({ message: "Failed to fetch recent documents" });
+      }
+    }
+  );
+
   
 };
 

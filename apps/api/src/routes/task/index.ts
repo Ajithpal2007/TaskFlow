@@ -483,6 +483,46 @@ export default async function taskRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // 🟢 2. GET ALL TASKS FOR A SPECIFIC PROJECT
+  // 🟢 GET MY PRIORITY TASKS
+  fastify.get(
+    "/workspaces/:workspaceId/tasks/me",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { workspaceId } = request.params as { workspaceId: string };
+      const userId = (request as any).user.id;
+
+      try {
+        const priorityTasks = await prisma.task.findMany({
+          where: {
+            project: {
+              workspaceId,
+            },
+            assigneeId: userId,
+            priority: {
+              in: ["HIGH", "URGENT", "MEDIUM"],
+            },
+            status: {
+              notIn: [ "DONE", "CANCELED"],
+            },
+          },
+          // Bring the most urgent deadlines to the top
+          orderBy: {
+            dueDate: "asc",
+          },
+          take: 5, // Just grab the top 5 for the dashboard
+          include: {
+            project: { select: { id: true, name: true } }, // Grab project name for context
+          },
+        });
+
+        return reply.code(200).send({ data: priorityTasks });
+      } catch (error) {
+        console.error("Failed to fetch priority tasks:", error);
+        return reply
+          .code(500)
+          .send({ message: "Failed to fetch priority tasks" });
+      }
+    },
+  );
 }
 

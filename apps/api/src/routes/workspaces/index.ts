@@ -13,6 +13,7 @@ import crypto from "crypto";
 import { requireWorkspaceRole } from "../../middleware/require-role";
 
 import { emailQueue } from "../../lib/queue"; 
+import { seedOnboardingData } from "@services/onboarding.service.js";
 
 export default async function workspaceRoutes(fastify: FastifyInstance) {
   // POST /api/workspaces
@@ -605,5 +606,37 @@ fastify.post("/:workspaceId/api-key", async (request, reply) => {
   });
 
   
+fastify.post(
+  "/onboard",
+  { preHandler: [requireAuth] },
+  async (request, reply) => {
+    const userId = (request as any).user.id;
+    const userName = (request as any).user.name || "User";
+
+    try {
+      // Check if they already have a workspace (security check)
+      const existing = await prisma.workspaceMember.findFirst({
+        where: { userId }
+      });
+
+      if (existing) {
+        return reply.code(400).send({ message: "You already belong to a workspace." });
+      }
+
+      // 🚀 Fire the Prisma Transaction!
+      const workspace = await seedOnboardingData(userId, userName);
+
+      return reply.code(200).send({ 
+        success: true, 
+        workspaceId: workspace.id 
+      });
+      
+    } catch (error) {
+      console.error("Onboarding failed:", error);
+      return reply.code(500).send({ message: "Failed to initialize workspace." });
+    }
+  }
+);
+
 }
 

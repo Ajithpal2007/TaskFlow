@@ -6,17 +6,17 @@ export const useArchiveDocument = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ docId, isArchived }: { docId: string; isArchived: boolean }) => {
-      const response = await apiClient.patch(`/docs/${docId}/archive`, { isArchived });
+    mutationFn: async ({workspaceId, docId, isArchived }: { workspaceId: string; docId: string; isArchived: boolean }) => {
+      const response = await apiClient.patch(`/workspaces/${workspaceId}/docs/${docId}/archive`, { isArchived });
       return response.data.data;
     },
-    onSuccess: () => {
-      // 🟢 Refresh the sidebar tree so the archived doc vanishes!
-      queryClient.invalidateQueries({ queryKey: ["documents", "tree"] });
-      toast.success("Document moved to trash");
+    onSuccess: (_, variables) => {
+      // 🟢 3. Invalidate the specific workspace's tree!
+      queryClient.invalidateQueries({ queryKey: ["documents", "tree", variables.workspaceId] });
+      toast.success(variables.isArchived ? "Document moved to trash" : "Document restored");
     },
     onError: () => {
-      toast.error("Failed to archive document.");
+      toast.error("Failed to update document status.");
     }
   });
 };

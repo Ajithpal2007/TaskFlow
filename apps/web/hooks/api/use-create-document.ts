@@ -15,7 +15,7 @@ export const useCreateDocument = () => {
       parentId?: string; 
       authorId: string 
     }) => {
-      const response = await apiClient.post("/docs", payload);
+     const response = await apiClient.post(`/workspaces/${payload.workspaceId}/docs`, payload);
       return response.data.data;
     },
     onSuccess: (newDoc) => {

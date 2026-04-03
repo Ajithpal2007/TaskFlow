@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/app/lib/api-client";
 
-export function useDocument(docId: string) {
+export function useDocument(workspaceId: string, docId: string) {
   const queryClient = useQueryClient();
 
   // 1. FETCH DOCUMENT
@@ -10,16 +10,16 @@ export function useDocument(docId: string) {
     queryKey: ["document", docId],
     queryFn: async () => {
       // Adjust this URL to match exactly where you mounted the fastify routes!
-      const { data } = await apiClient.get(`/docs/${docId}`);
+      const { data } = await apiClient.get(`/workspaces/${workspaceId}/docs/${docId}`);
       return data.data;
     },
-    enabled: !!docId && docId !== "undefined",
+   enabled: !!workspaceId && !!docId && docId !== "undefined",
   });
 
   // 2. AUTO-SAVE MUTATION
   const updateDocumentMutation = useMutation({
     mutationFn: async (updates: any) => {
-      const { data } = await apiClient.patch(`/docs/${docId}`, updates);
+      const { data } = await apiClient.patch(`/workspaces/${workspaceId}/docs/${docId}`, updates);
       return data.data;
     },
     onMutate: async (updates) => {

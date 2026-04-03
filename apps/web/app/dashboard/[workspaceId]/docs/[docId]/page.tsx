@@ -21,7 +21,7 @@ const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
 export default function DocumentPage({ params }: { params: { docId: string; workspaceId: string; projectId?: string } }) {
   const { resolvedTheme } = useTheme();
-  const { document, isLoading, updateDocument } = useDocument(params.docId);
+  const { document, isLoading, updateDocument } = useDocument(params.workspaceId, params.docId);
   const [title, setTitle] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -44,7 +44,7 @@ export default function DocumentPage({ params }: { params: { docId: string; work
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-36">
 
       {/* 🟢 1. THE COVER IMAGE AREA */}
       {document?.coverImage && (

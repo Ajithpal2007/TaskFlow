@@ -8,7 +8,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // 🟢 1. GET ALL DOCS FOR SIDEBAR (The Recursive Tree)
   // Frontend Hook: apiClient.get(`/docs/workspace/${workspaceId}`)
   fastify.get(
-    "/docs/workspace/:workspaceId",
+     "/workspaces/:workspaceId/docs",
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
 
     async (request, reply) => {
@@ -50,7 +50,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // 🟢 2. CREATE A NEW DOCUMENT (Root or Child)
   // Frontend Hook: apiClient.post("/docs", payload)
   fastify.post(
-    "/docs",
+    "/workspaces/:workspaceId/docs",
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { title, parentId, workspaceId } = request.body as any;
@@ -76,9 +76,9 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // 🟢 3. GET A SINGLE DOCUMENT (For the Editor)
-  // Frontend Hook: apiClient.get(`/docs/${docId}`)
+  
   fastify.get(
-    "/docs/:docId",
+    "/workspaces/:workspaceId/docs/:docId",
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
@@ -108,7 +108,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // 🟢 4. UPDATE DOCUMENT (Editor Auto-Save)
   // Frontend Hook: apiClient.patch(`/docs/${docId}`, updates)
   fastify.patch(
-    "/docs/:docId",
+    "/workspaces/:workspaceId/docs/:docId",
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
@@ -133,9 +133,9 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   );
 
   // 🟢 5. ARCHIVE / SOFT-DELETE DOCUMENT
-  // Frontend Hook: apiClient.patch(`/docs/${docId}/archive`, { isArchived: true })
+  
   fastify.patch(
-    "/docs/:docId/archive",
+    "/workspaces/:workspaceId/docs/:docId/archive",
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
@@ -158,7 +158,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   // 🟢 6. GET TRASHED DOCUMENTS
   // Frontend Hook: apiClient.get(`/docs/workspace/${workspaceId}/trash`)
   fastify.get(
-    "/docs/workspace/:workspaceId/trash",
+    "/workspaces/:workspaceId/docs/trash",
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", ])] },
     async (request, reply) => {
       const { workspaceId } = request.params as { workspaceId: string };
@@ -182,7 +182,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
 
   // 🔴 7. PERMANENTLY DELETE DOCUMENT
   fastify.delete(
-    "/docs/:docId",
+    "/workspaces/:workspaceId/docs/:docId",
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", ])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };
@@ -229,7 +229,7 @@ const documentRoutes: FastifyPluginAsync = async (fastify) => {
   );
   // 🟢 8. INVITE COLLABORATOR
   fastify.post(
-    "/docs/:docId/invite",
+    "/workspaces/:workspaceId/docs/:docId/invite",
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER"])] },
     async (request, reply) => {
       const { docId } = request.params as { docId: string };

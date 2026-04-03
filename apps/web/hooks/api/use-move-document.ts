@@ -6,9 +6,9 @@ export const useMoveDocument = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ docId, parentId }: { docId: string; parentId: string | null }) => {
+    mutationFn: async ({ workspaceId, docId, parentId }: { workspaceId: string; docId: string; parentId: string | null }) => {
       // We reuse the existing PATCH route, just sending the new parentId!
-      const response = await apiClient.patch(`/docs/${docId}`, { parentId });
+      const response = await apiClient.patch(`/workspaces/${workspaceId}/docs/${docId}`, { parentId });
       return response.data.data;
     },
     onSuccess: (data) => {

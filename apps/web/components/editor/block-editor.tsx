@@ -7,24 +7,28 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/app/lib/api-client";
 import { useParams } from "next/navigation";
 import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
 
+import { HocuspocusProvider } from "@hocuspocus/provider";
 
+import { AiChatWidget } from "./ai-chat-widget";
 
 import "@blocknote/core/fonts/inter.css";
-import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs } from "@blocknote/core";
-import { useCreateBlockNote, SuggestionMenuController } from "@blocknote/react";
-import { BlockNoteView, lightDefaultTheme, darkDefaultTheme } from "@blocknote/mantine";
+import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, filterSuggestionItems, BlockNoteEditor } from "@blocknote/core";
+import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuItems } from "@blocknote/react";
+import { BlockNoteView, lightDefaultTheme, darkDefaultTheme, } from "@blocknote/mantine";
+
 import "@blocknote/mantine/style.css";
 
 import { createReactInlineContentSpec } from "@blocknote/react";
 
 import { TaskBlock } from "./task-block";
-import { CheckSquare, Loader2, User as UserIcon, FolderDot, } from "lucide-react";
+import { CheckSquare, Loader2, User as UserIcon, FolderDot, Sparkles } from "lucide-react";
 
 import { authClient } from "@/app/lib/auth/client";
 
 import { ExportMenu } from "./export-menu";
+
+import { toast } from "sonner";
 
 interface BlockEditorProps {
   documentId: string;
@@ -134,8 +138,214 @@ export const MentionPill = createReactInlineContentSpec(
 // 🟢 2. THE INNER EDITOR (Logic, Saving, UI)
 function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLocked, }: any) {
   const { resolvedTheme } = useTheme();
-  const { updateDocument } = useDocument(documentId);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+
+
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+
+  const [isAiWidgetOpen, setIsAiWidgetOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault(); // Stop Chrome's default downloads shortcut!
+        setIsAiWidgetOpen((prev) => !prev);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // 🟢 PART 2: The AI Streaming Engine
+  const handleAIGeneration = async (editor: typeof BlockNoteEditor.prototype) => {
+    if (isGeneratingAI) return;
+    setIsGeneratingAI(true);
+
+    try {
+      // Step A: Grab the cursor and the block above it for context
+      const cursorPosition = editor.getTextCursorPosition();
+      const currentBlock = cursorPosition.block;
+      const prevBlock = cursorPosition.prevBlock;
+
+      // BlockNote stores text as an array of inline content. We extract the raw text.
+      let contextText = "Write an introductory paragraph.";
+      if (prevBlock && Array.isArray(prevBlock.content)) {
+        contextText = prevBlock.content.map((c: any) => c.text || "").join("");
+      } else if (prevBlock && typeof prevBlock.content === "string") {
+        contextText = prevBlock.content;
+      }
+
+      // Step B: Set the "Thinking" state directly on the canvas
+      editor.updateBlock(currentBlock, {
+        type: "paragraph",
+        content: "✨ AI is thinking...",
+      });
+
+      // Step C: Connect to your Fastify SSE route
+      const response = await fetch(`http://localhost:4000/api/ai/${workspaceId}/editor-assist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          command: "continue_writing",
+          contextText: contextText,
+        }),
+      });
+
+      if (!response.ok || !response.body) throw new Error("AI failed to connect");
+
+      // Step D: Open the stream and catch the words!
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunkString = decoder.decode(value);
+        const lines = chunkString.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.replace('data: ', '').trim();
+
+            // Fastify says we are done!
+            if (dataStr === '[DONE]') break;
+
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.text) {
+                accumulatedText += parsed.text;
+
+                // 🟢 This is the magic line that updates BlockNote in real-time
+                editor.updateBlock(currentBlock, {
+                  type: "paragraph",
+                  content: accumulatedText,
+                });
+              }
+            } catch (e) {
+              console.error("Failed to parse stream chunk", e);
+            }
+          }
+        }
+      }
+
+      // Step E: Once finished, add a new blank block below so the user can keep typing
+      editor.insertBlocks([{ type: "paragraph", content: "" }], currentBlock, "after");
+      editor.setTextCursorPosition(editor.getTextCursorPosition().nextBlock!, "start");
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate AI content");
+      // If it fails, clear the "Thinking..." text
+      editor.updateBlock(editor.getTextCursorPosition().block, {
+        type: "paragraph",
+        content: "",
+      });
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  // 🟢 PART 4: The Widget Streaming Engine
+  const handleWidgetAction = async (command: string) => {
+    if (isGeneratingAI) return;
+    setIsGeneratingAI(true);
+
+    try {
+      // 1. Grab the user's highlighted text. If nothing is highlighted, grab the current block.
+      let contextText = editor.getSelectedText();
+      const currentBlock = editor.getTextCursorPosition().block as any;
+
+      if (!contextText && currentBlock.content && Array.isArray(currentBlock.content)) {
+        // If nothing is highlighted, grab the text from the current block
+        contextText = currentBlock.content.map((c: any) => c.text || "").join("");
+      }
+
+
+      if (!contextText.trim()) {
+        toast.error("Please select or type some text first!");
+        setIsGeneratingAI(false);
+        return;
+      }
+
+      // 2. Insert a new block below the current one to hold the AI's response
+      editor.insertBlocks([{ type: "paragraph", content: "✨ AI is working..." }], currentBlock, "after");
+      const targetBlock = editor.getTextCursorPosition().nextBlock!;
+
+      // 3. Connect to your Fastify SSE route
+      const response = await fetch(`http://localhost:4000/api/ai/${workspaceId}/editor-assist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          command: command, // This will be "improve", "fix_grammar", or a custom prompt!
+          contextText: contextText,
+        }),
+      });
+
+      if (!response.ok || !response.body) throw new Error("AI failed to connect");
+
+      // 4. Open the stream and catch the words
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        const chunkString = decoder.decode(value);
+        const lines = chunkString.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.replace('data: ', '').trim();
+            if (dataStr === '[DONE]') break;
+
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.text) {
+                accumulatedText += parsed.text;
+
+                // 🟢 Update the new block in real-time
+                editor.updateBlock(targetBlock, {
+                  type: "paragraph",
+                  content: accumulatedText,
+                });
+              }
+            } catch (e) {
+              console.error("Failed to parse stream chunk", e);
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to process AI request");
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  // 🟢 PART 3: Define the custom AI menu item
+  const insertMagicAI = (editor: BlockNoteEditor) => ({
+    title: "Write with AI",
+    onItemClick: () => handleAIGeneration(editor),
+    aliases: ["ai", "magic", "generate"],
+    group: "AI Tools",
+    icon: <Sparkles size={18} className="text-indigo-500" />,
+    subtext: "Auto-completes based on context.",
+  });
+
+  // Combine our custom AI tool with all the default BlockNote tools (Headings, Bullet points, etc.)
+  const getCustomSlashMenuItems = (editor: BlockNoteEditor) => [
+    insertMagicAI(editor),
+    ...getDefaultReactSlashMenuItems(editor),
+  ];
 
   const { data: session } = authClient.useSession();
 
@@ -144,7 +354,7 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
   const schema = useMemo(() => {
     return BlockNoteSchema.create({
       blockSpecs: { ...defaultBlockSpecs, task: TaskBlock() },
-      
+
     });
   }, []);
 
@@ -167,12 +377,7 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
     },
   });
 
-  const handleSave = () => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      updateDocument({ content: editor.document });
-    }, 1000);
-  };
+
 
   const getMentionMenuItems = async (query: string) => {
     // 1. Fetch from the new Omni-Search route
@@ -232,12 +437,26 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
         />
       </div>
 
-      <BlockNoteView editor={editor} editable={!isLocked} theme={resolvedTheme === "dark" ? darkDefaultTheme : lightDefaultTheme} onChange={handleSave}>
+      <AiChatWidget
+        isOpen={isAiWidgetOpen}
+        onClose={() => setIsAiWidgetOpen(false)}
+        onSubmitPrompt={(prompt) => {
+          handleWidgetAction(prompt); // Sends their custom text input
+          setIsAiWidgetOpen(false);
+        }}
+        onQuickAction={(action) => {
+          handleWidgetAction(action); // Sends "improve", "summarize", etc.
+          setIsAiWidgetOpen(false);
+        }}
+      />
+
+      <BlockNoteView editor={editor} editable={!isLocked} theme={resolvedTheme === "dark" ? darkDefaultTheme : lightDefaultTheme} >
         <SuggestionMenuController
           triggerCharacter={"@"}
           getItems={async (query) => getMentionMenuItems(query)}
           suggestionMenuComponent={CustomTaskMenu}
           onItemClick={(item) => item.onItemClick()}
+
         />
       </BlockNoteView>
     </div>
@@ -245,28 +464,33 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
 }
 
 // 🟢 3. THE WRAPPER (WebSocket Connection)
+// 🟢 3. THE WRAPPER (Hocuspocus Connection)
 export default function BlockEditor(props: BlockEditorProps) {
   const [yDoc, setYDoc] = useState<Y.Doc>();
-  const [provider, setProvider] = useState<WebsocketProvider>();
+  const [provider, setProvider] = useState<HocuspocusProvider>();
 
   useEffect(() => {
     const doc = new Y.Doc();
 
-    // 🟢 THE FIX: Let y-websocket build the URL naturally!
-    // 1. Give it the base URL (NO document ID here)
-    // 2. Give it the room name (The document ID)
-    const wsProvider = new WebsocketProvider(
-      "ws://localhost:4000/api/collaboration",
-      props.documentId,
-      doc
-    );
+    // Initialize Hocuspocus Provider
+    const hocuspocusProvider = new HocuspocusProvider({
+      url: "ws://localhost:4000/api/collaboration", // Matches your new backend route!
+      name: props.documentId, // This is passed as `documentName` to your Fastify Database extension
+      document: doc,
+      onConnect: () => {
+        console.log("🟢 Connected to Hocuspocus Server!");
+      },
+      onSynced: () => {
+        console.log("✨ Document state fully synced with Postgres!");
+      }
+    });
 
     setYDoc(doc);
-    setProvider(wsProvider);
+    setProvider(hocuspocusProvider);
 
     return () => {
+      hocuspocusProvider.destroy();
       doc.destroy();
-      wsProvider.destroy();
     };
   }, [props.documentId]);
 

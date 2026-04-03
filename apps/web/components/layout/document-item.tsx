@@ -66,14 +66,14 @@ export function DocumentItem({ document, level = 0 }: DocumentItemProps) {
     if (!isExpanded) setIsExpanded(true);
 
     // Fire the backend mutation!
-    moveDocument({ docId: draggedId, parentId: document.id });
+    moveDocument({ workspaceId: params.workspaceId as string, docId: draggedId, parentId: document.id });
   };
 
 
 
   const onArchive = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevents navigating to the doc when clicking delete
-    archiveDoc({ docId: document.id, isArchived: true });
+    archiveDoc({ workspaceId: params.workspaceId as string, docId: document.id, isArchived: true });
   };
 
   const onExpand = (e: React.MouseEvent) => {

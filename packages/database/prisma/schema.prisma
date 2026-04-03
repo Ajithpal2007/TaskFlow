@@ -491,6 +491,9 @@ model Document {
   emoji      String? // e.g., "🚀"
   coverImage String? // URL to an unsplash image or uploaded file
 
+  // 🟢 Yjs State (For Real-Time Collaboration)
+  yjsState    Bytes?
+
   // 🟢 Access & State
   isArchived Boolean @default(false)
   isLocked   Boolean @default(false) // Prevents accidental edits (Read-Only mode)

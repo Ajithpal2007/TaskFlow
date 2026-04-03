@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { Checkbox } from "@repo/ui/components/checkbox";
 import { Input } from "@repo/ui/components/input";
 import { Button } from "@repo/ui/components/button";
-import { Plus, X, ListTodo } from "lucide-react";
+import { Plus, X, ListTodo, Sparkles } from "lucide-react"; // 🟢 Added Sparkles
 import { Progress } from "@repo/ui/components/progress";
+import { toast } from "sonner"; // 🟢 Added toast for AI feedback
+import { useParams } from "next/navigation";
 
 interface TaskSubtasksProps {
   task: any;
@@ -13,15 +15,19 @@ interface TaskSubtasksProps {
   updateSubtask: (data: { id: string; status?: string; title?: string }) => void;
   deleteSubtask: (id: string) => void;
   isCreatingSubtask: boolean;
+  refreshTask?: () => void; // 🟢 Optional: Pass a function to refresh the task data after AI generation
 }
 
-export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask, isCreatingSubtask }: TaskSubtasksProps) {
+export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask, isCreatingSubtask, refreshTask }: TaskSubtasksProps) {
   // --- STATE ---
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-  
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+
+
+
 
   const addInputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
@@ -29,6 +35,19 @@ export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask
   const subtasks = task?.subtasks || [];
   const completedCount = subtasks.filter((st: any) => st.status === "DONE").length;
   const progressValue = subtasks.length === 0 ? 0 : (completedCount / subtasks.length) * 100;
+
+  const params = useParams();
+  const workspaceId = params.workspaceId as string;
+
+  // 🟢 AI Loading State
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [streamedSubtasks, setStreamedSubtasks] = useState<any[]>([]);
+  const displaySubtasks = [
+    ...subtasks,
+    ...streamedSubtasks.filter(
+      (streamed) => !subtasks.some((serverTask: any) => serverTask.id === streamed.id)
+    )
+  ];
 
   // --- FOCUS MANAGEMENT ---
   useEffect(() => {
@@ -40,9 +59,55 @@ export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask
   const handleCreate = () => {
     if (newTitle.trim()) {
       createSubtask(newTitle.trim());
-      setNewTitle(""); // Keep 'isAdding' true so they can rapidly type another one!
+      setNewTitle("");
     } else {
       setIsAdding(false);
+    }
+  };
+
+  // --- AI GENERATION LOGIC 🟢 ---
+  const handleGenerateAI = async () => {
+    setIsGeneratingAI(true);
+    setStreamedSubtasks([]);
+
+
+    try {
+      // 🟢 2. Inject it safely into the URL
+      const res = await fetch(`http://localhost:4000/api/ai/${workspaceId}/generate-subtasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          taskId: task.id,
+          title: task.title,
+          description: task.description,
+          projectId: task.projectId
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to generate subtasks");
+
+      const data = await res.json();
+      // 🟢 THE CASCADE EFFECT
+      // Instead of showing them all instantly, we reveal them one-by-one!
+      data.subtasks.forEach((newSubtask: any, index: number) => {
+        setTimeout(() => {
+          setStreamedSubtasks((prev) => [...prev, newSubtask]);
+        }, index * 400); // 400ms delay between each subtask appearing
+      });
+
+      // Wait for the animation to finish, then officially refresh the parent data
+      setTimeout(() => {
+        if (refreshTask) refreshTask();
+        
+        toast.success(`✨ Generated ${data.count} subtasks!`);
+      }, data.subtasks.length * 400);
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to generate AI subtasks.");
+    } finally {
+      setIsGeneratingAI(false);
     }
   };
 
@@ -61,21 +126,34 @@ export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask
 
   return (
     <div className="space-y-4">
-      
+
       {/* HEADER & PROGRESS BAR */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 font-semibold text-lg">
           <ListTodo className="h-5 w-5 text-muted-foreground" />
           Subtasks
         </div>
-        {subtasks.length > 0 && (
-          <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
-            <span>{completedCount} / {subtasks.length}</span>
-            <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setIsAdding(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1" /> Add
-            </Button>
-          </div>
-        )}
+
+        {/* 🟢 Action Buttons */}
+        <div className="flex items-center gap-2 text-xs font-medium">
+          {subtasks.length > 0 && <span className="text-muted-foreground mr-2">{completedCount} / {subtasks.length}</span>}
+
+          {/* ✨ New AI Button ✨ */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 transition-all"
+            onClick={handleGenerateAI}
+            disabled={isGeneratingAI}
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1" />
+            {isGeneratingAI ? "Thinking..." : "Auto-Generate"}
+          </Button>
+
+          <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setIsAdding(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add
+          </Button>
+        </div>
       </div>
 
       {subtasks.length > 0 && (
@@ -85,7 +163,7 @@ export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask
       {/* THE SUBTASK LIST */}
       <div className="space-y-1 pt-2">
         {subtasks.length === 0 && !isAdding && (
-          <div 
+          <div
             onClick={() => setIsAdding(true)}
             className="flex flex-col items-center justify-center py-6 border-2 border-dashed rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground cursor-pointer transition-colors"
           >
@@ -94,14 +172,15 @@ export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask
           </div>
         )}
 
-        {subtasks.map((subtask: any) => (
-          <div 
-            key={subtask.id} 
-            className="group flex items-center gap-3 p-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors"
+        {displaySubtasks.map((subtask: any) => (
+          <div
+            key={subtask.id}
+            // 🟢 Add a simple Tailwind fade-in animation here if you want it to look extra smooth!
+            className="animate-in fade-in slide-in-from-top-2 duration-500 group flex items-center gap-3 p-2 -mx-2 rounded-md hover:bg-muted/50 transition-all"
           >
             {/* The Checkbox */}
-            <Checkbox 
-              checked={subtask.status === "DONE"} 
+            <Checkbox
+              checked={subtask.status === "DONE"}
               onCheckedChange={(checked) => updateSubtask({ id: subtask.id, status: checked ? "DONE" : "TODO" })}
               className="h-4 w-4 rounded-[4px] data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
             />
@@ -121,7 +200,7 @@ export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask
                   className="h-7 px-2 text-sm"
                 />
               ) : (
-                <span 
+                <span
                   onClick={() => startEditing(subtask)}
                   className={`text-sm cursor-text truncate block select-none ${subtask.status === "DONE" ? "line-through text-muted-foreground" : "text-foreground"}`}
                 >

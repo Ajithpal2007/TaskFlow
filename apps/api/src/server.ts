@@ -8,7 +8,10 @@ import websocket from "@fastify/websocket";
 import { createRouteHandler } from "uploadthing/fastify";
 import { ourFileRouter } from "./lib/uploadthing";
 
-import { setupWSConnection } from "./lib/yjs-utils.js";
+
+import { Hocuspocus } from "@hocuspocus/server";
+import { Database } from "@hocuspocus/extension-database";
+import { prisma } from "@repo/database";
 
 import fastifyRawBody from "fastify-raw-body";
 import fastifyRateLimit from "@fastify/rate-limit";
@@ -30,7 +33,6 @@ export async function buildServer() {
   });
 
   // Call this right before fastify.listen()
-  
 
   await fastify.register(websocket);
 
@@ -61,14 +63,40 @@ export async function buildServer() {
     });
   });
 
-  // 🟢 THE NEW YJS COLLABORATION ROUTE
-  fastify.get(
-    "/api/collaboration/:documentId",
-    { websocket: true },
-    (connection, request) => {
-      setupWSConnection(connection, request.raw);
-    },
-  );
+  const hocuspocusServer = new Hocuspocus({
+    extensions: [
+      new Database({
+        // A. FETCH: Get Yjs state from Postgres
+        fetch: async ({ documentName }) => {
+          const doc = await prisma.document.findUnique({
+            where: { id: documentName },
+            select: { yjsState: true },
+          });
+          // Ensure you return a Uint8Array or null
+          return doc?.yjsState ? new Uint8Array(doc.yjsState) : null;
+        },
+
+        // B. STORE: Save binary state to Postgres
+        store: async ({ documentName, state }) => {
+          await prisma.document.update({
+            where: { id: documentName },
+            data: {
+              // Prisma handles Buffer/Uint8Array for Bytes fields
+              yjsState: Buffer.from(state),
+              updatedAt: new Date(),
+            },
+          });
+        },
+      }),
+    ],
+  });
+
+  // 2. Fastify WebSocket Route
+  // Note: In newer @fastify/websocket, the first arg is the 'socket' directly
+  fastify.get("/api/collaboration", { websocket: true }, (socket, request) => {
+    // Pass the socket and the raw internal Node request to Hocuspocus
+    hocuspocusServer.handleConnection(socket, request.raw);
+  });
 
   await fastify.register(cors, {
     origin: "http://localhost:3000",
@@ -162,7 +190,7 @@ export async function buildServer() {
   await fastify.register(import("./routes/integrations/slack.js"), {
     prefix: "/api/integrations/slack",
   });
-  
+
   await fastify.register(import("./routes/api/zapier.js"), {
     prefix: "/api/external/zapier",
   });

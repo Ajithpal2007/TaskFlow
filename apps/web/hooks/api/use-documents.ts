@@ -7,7 +7,7 @@ export function useDocuments(workspaceId?: string) {
     queryKey: ["documents", "tree", workspaceId],
     queryFn: async () => {
       // This hits the Recursive Fastify route we just built!
-      const { data } = await apiClient.get(`/docs/workspace/${workspaceId}?=t${Date.now()}`);
+      const { data } = await apiClient.get(`/workspaces/${workspaceId}/docs?t=${Date.now()}`);
       return data.data; // This returns the nested tree structure
     },
     // Only fetch if we actually have a workspace selected

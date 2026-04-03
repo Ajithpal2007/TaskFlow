@@ -306,7 +306,7 @@ const planName = isPro ? "Pro Plan" : "Free Plan";
 
                     // Fire the mutation to remove the parentId!
                     if (draggedId) {
-                      moveDocument({ docId: draggedId, parentId: null });
+                      moveDocument({ workspaceId: activeWorkspace.id, docId: draggedId, parentId: null });
                     }
                   }}
                   className={cn(

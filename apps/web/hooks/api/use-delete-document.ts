@@ -6,11 +6,13 @@ export const useDeleteDocument = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (docId: string) => {
-      await apiClient.delete(`/docs/${docId}`);
+    // 🟢 Added workspaceId
+    mutationFn: async ({ workspaceId, docId }: { workspaceId: string; docId: string }) => {
+      await apiClient.delete(`/workspaces/${workspaceId}/docs/${docId}`);
     },
-    onSuccess: (_, docId) => {
-      queryClient.invalidateQueries({ queryKey: ["documents", "trash"] });
+    onSuccess: (_, variables) => {
+      // 🟢 Refresh that specific workspace's trash
+      queryClient.invalidateQueries({ queryKey: ["documents", "trash", variables.workspaceId] });
       toast.success("Document permanently deleted");
     },
   });

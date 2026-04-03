@@ -1,46 +1,82 @@
-import  { WebSocket } from "ws";
+import { WebSocket } from "ws";
+import Redis from "ioredis";
 
-// A Map that links a Channel ID to a Set of active WebSocket connections
-const channelSubscriptions = new Map<string, Set<WebSocket>>();
+// 1. Setup Redis Connections
+// Redis requires TWO connections for Pub/Sub: One to talk, one exclusively to listen.
+// 🟢 Look for REDIS_URL instead!
+const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_URL || "";
+if (!redisUrl) console.warn("⚠️ Redis URL is missing from .env!");
 
-export const chatHub = {
-  // 🟢 1. Add a user's connection to a specific channel room
-  subscribe: (channelId: string, socket: WebSocket) => {
-    if (!channelSubscriptions.has(channelId)) {
-      channelSubscriptions.set(channelId, new Set());
-    }
-    channelSubscriptions.get(channelId)!.add(socket);
-    
-    // Automatically clean up when they close the tab or disconnect
-    socket.on("close", () => {
-      chatHub.unsubscribe(channelId, socket);
+const pubClient = new Redis(redisUrl); 
+const subClient = new Redis(redisUrl); 
+
+class ChatHub {
+  // We still keep a local map for the users physically connected to THIS specific server
+  private localSubscriptions = new Map<string, Set<WebSocket>>();
+
+  constructor() {
+    // 2. Tell the "Listener" to tune into our global chat frequency
+    subClient.subscribe("global:chat", (err) => {
+      if (err) console.error("Redis Sub Error:", err);
+      else console.log("🎧 Connected to Upstash Redis Pub/Sub");
     });
-  },
 
-  // 🟢 2. Remove a connection
-  unsubscribe: (channelId: string, socket: WebSocket) => {
-    const subscribers = channelSubscriptions.get(channelId);
+    // 3. Listen for messages flying across Redis from ANY server
+    subClient.on("message", (channel, message) => {
+      if (channel === "global:chat") {
+        try {
+          const { channelId, payload } = JSON.parse(message);
+          // When Redis hands us a message, push it to our local browsers!
+          this.localBroadcast(channelId, payload);
+        } catch (error) {
+          console.error("Failed to parse Redis message:", error);
+        }
+      }
+    });
+  }
+
+  // --- LOCAL MEMORY MANAGEMENT ---
+  subscribe(channelId: string, socket: WebSocket) {
+    if (!this.localSubscriptions.has(channelId)) {
+      this.localSubscriptions.set(channelId, new Set());
+    }
+    this.localSubscriptions.get(channelId)!.add(socket);
+
+    socket.on("close", () => this.unsubscribe(channelId, socket));
+  }
+
+  unsubscribe(channelId: string, socket: WebSocket) {
+    const subscribers = this.localSubscriptions.get(channelId);
     if (subscribers) {
       subscribers.delete(socket);
-      // If the room is empty, delete it to save server RAM!
       if (subscribers.size === 0) {
-        channelSubscriptions.delete(channelId);
+        this.localSubscriptions.delete(channelId); // Save RAM!
       }
     }
-  },
+  }
 
-  // 🟢 3. The Magic Broadcast Function!
-  // Any REST API route can call this to instantly update everyone's screen
-  broadcast: (channelId: string, payload: any) => {
-    const subscribers = channelSubscriptions.get(channelId);
+  // --- 🟢 THE MAGIC: DISTRIBUTED BROADCAST ---
+  // Any REST API route calls this. Instead of updating screens directly, 
+  // it blasts the message up to Upstash!
+  broadcast(channelId: string, payload: any) {
+    const redisMessage = JSON.stringify({ channelId, payload });
+    pubClient.publish("global:chat", redisMessage);
+  }
+
+  // --- 🟢 LOCAL DELIVERY ---
+  // Triggered automatically by `subClient.on("message")`
+  private localBroadcast(channelId: string, payload: any) {
+    const subscribers = this.localSubscriptions.get(channelId);
     if (subscribers) {
       const messageString = JSON.stringify(payload);
       for (const socket of subscribers) {
-        // Only send if the connection is still fully open
         if (socket.readyState === WebSocket.OPEN) {
           socket.send(messageString);
         }
       }
     }
   }
-};
+}
+
+// Export the singleton
+export const chatHub = new ChatHub();

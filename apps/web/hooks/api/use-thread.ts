@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/app/lib/api-client";
 import { toast } from "sonner"; // Assuming you use sonner for toasts!
+import { useUIStore } from "@/app/lib/stores/use-ui-store";
 
 export function useThread(
   messageId: string | null,
   channelId: string,
   currentUser: any,
+  workspaceId: string | null,
 ) {
   const queryClient = useQueryClient();
 
@@ -29,7 +31,7 @@ export function useThread(
       content: string;
       fileUrls?: string[];
     }) => {
-      const { data } = await apiClient.post("/chat/messages", {
+      const { data } = await apiClient.post(`/chat/messages`,  {
         channelId,
         content,
         parentId: messageId,

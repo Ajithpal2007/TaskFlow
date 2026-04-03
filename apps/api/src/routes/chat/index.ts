@@ -5,75 +5,81 @@ import { requireAuth } from "../../middleware/require-auth.js";
 import { prisma } from "@repo/database";
 import { redisConnection } from "../../lib/queue";
 
+import { requireWorkspaceRole } from "../../middleware/require-role";
 
 const chatRoutes: FastifyPluginAsync = async (fastify) => {
-    fastify.get(
-  "/ws",
-  {
-    websocket: true,
-    // Layer A: The Handshake Limiter (Max 20 connections per minute)
-    config: {
-      rateLimit: { max: 20, timeWindow: "1 minute" },
+  fastify.get(
+    "/ws",
+    {
+      websocket: true,
+      // Layer A: The Handshake Limiter (Max 20 connections per minute)
+      config: {
+        rateLimit: { max: 20, timeWindow: "1 minute" },
+      },
     },
-  },
-  (socket: WebSocket, request) => {
-    // 🟢 1. IDENTIFY THE USER
-    // In WebSockets, request.user might not exist depending on how you handle Auth.
-    // If you pass a token in the URL (e.g., /ws?userId=123), grab it here.
-    // Fallback to the unique socket key if userId isn't easily available yet.
-    const userId = (request as any).user?.id || (request.query as any).userId || request.headers["sec-websocket-key"];
+    (socket: WebSocket, request) => {
+      // 🟢 1. IDENTIFY THE USER
+      // In WebSockets, request.user might not exist depending on how you handle Auth.
+      // If you pass a token in the URL (e.g., /ws?userId=123), grab it here.
+      // Fallback to the unique socket key if userId isn't easily available yet.
+      const userId =
+        (request as any).user?.id ||
+        (request.query as any).userId ||
+        request.headers["sec-websocket-key"];
 
-    // 🟢 2. MAKE THIS ASYNC
-    socket.on("message", async (message: Buffer) => {
-      try {
-        // ==========================================
-        // 🟢 LAYER B: THE FIREHOSE LIMITER
-        // ==========================================
-        const redisKey = `ratelimit:ws_messages:${userId}`;
-        
-        // Increment their message count
-        const messageCount = await redisConnection.incr(redisKey);
-        
-        // If this is their first message in this window, set the timer for 10 seconds
-        if (messageCount === 1) {
-          await redisConnection.expire(redisKey, 10); 
+      // 🟢 2. MAKE THIS ASYNC
+      socket.on("message", async (message: Buffer) => {
+        try {
+          // ==========================================
+          // 🟢 LAYER B: THE FIREHOSE LIMITER
+          // ==========================================
+          const redisKey = `ratelimit:ws_messages:${userId}`;
+
+          // Increment their message count
+          const messageCount = await redisConnection.incr(redisKey);
+
+          // If this is their first message in this window, set the timer for 10 seconds
+          if (messageCount === 1) {
+            await redisConnection.expire(redisKey, 10);
+          }
+
+          // If they send more than 30 actions in 10 seconds, drop the message!
+          if (messageCount > 30) {
+            socket.send(
+              JSON.stringify({
+                type: "ERROR",
+                message: "You are sending actions too fast. Please slow down.",
+              }),
+            );
+            return; // 🛑 HALT! Do not process the JSON or broadcast anything.
+          }
+          // ==========================================
+
+          // 3. Normal processing (Only happens if they passed the rate limit!)
+          const data = JSON.parse(message.toString());
+
+          if (data.action === "subscribe" && data.channelId) {
+            chatHub.subscribe(data.channelId, socket);
+            console.log(`Socket joined channel room: ${data.channelId}`);
+          }
+
+          if (data.action === "unsubscribe" && data.channelId) {
+            chatHub.unsubscribe(data.channelId, socket);
+          }
+
+          if (data.action === "typing" && data.channelId) {
+            chatHub.broadcast(data.channelId, {
+              type: "USER_TYPING",
+              userName: data.userName,
+              channelId: data.channelId,
+            });
+          }
+        } catch (error) {
+          console.error("Invalid WS message format or Redis error", error);
         }
-
-        // If they send more than 30 actions in 10 seconds, drop the message!
-        if (messageCount > 30) {
-          socket.send(JSON.stringify({ 
-            type: "ERROR", 
-            message: "You are sending actions too fast. Please slow down." 
-          }));
-          return; // 🛑 HALT! Do not process the JSON or broadcast anything.
-        }
-        // ==========================================
-
-        // 3. Normal processing (Only happens if they passed the rate limit!)
-        const data = JSON.parse(message.toString());
-
-        if (data.action === "subscribe" && data.channelId) {
-          chatHub.subscribe(data.channelId, socket);
-          console.log(`Socket joined channel room: ${data.channelId}`);
-        }
-
-        if (data.action === "unsubscribe" && data.channelId) {
-          chatHub.unsubscribe(data.channelId, socket);
-        }
-
-        if (data.action === "typing" && data.channelId) {
-          chatHub.broadcast(data.channelId, {
-            type: "USER_TYPING",
-            userName: data.userName,
-            channelId: data.channelId,
-          });
-        }
-      } catch (error) {
-        console.error("Invalid WS message format or Redis error", error);
-      }
-    });
-  },
-);
+      });
+    },
+  );
 
   // 🟢 GET CHAT HISTORY: Fetch the last 50 messages when opening a channel
   // 🟢 GET CHAT HISTORY
@@ -169,8 +175,8 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
 
   // 🟢 CREATE A NEW CHANNEL OR DM
   fastify.post(
-    "/channels",
-    { preHandler: [requireAuth] },
+    "/workspaces/:workspaceId/channels",
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN"])] },
     async (request, reply) => {
       const currentUserId = (request as any).user.id;
       const { workspaceId, type, name, targetUserId } = request.body as {
@@ -268,11 +274,9 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
 
       // 2. VALIDATE: Ensure the required fields exist
       if (!channelId || (!content && (!fileUrls || fileUrls.length === 0))) {
-        return reply
-          .code(400)
-          .send({
-            message: "Channel ID and either content or files are required",
-          });
+        return reply.code(400).send({
+          message: "Channel ID and either content or files are required",
+        });
       }
 
       try {
@@ -450,43 +454,144 @@ const chatRoutes: FastifyPluginAsync = async (fastify) => {
     },
   );
 
-  fastify.get("/channels/:channelId", async (request, reply) => {
-    const { channelId } = request.params as { channelId: string };
-    const userId = (request as any).user.id; // Get the logged-in user
+  fastify.get(
+    "/workspaces/:workspaceId/channels/:channelId", { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { channelId } = request.params as { channelId: string };
+      const userId = (request as any).user.id;
 
-    // 1. Fetch the channel and INCLUDE the members
-    const channel = await prisma.channel.findUnique({
-      where: { id: channelId },
-      include: {
-        members: {
-          include: { user: true }, // Bring in the user details
+      // 1. Fetch the channel, members, AND messages that have files
+      const channel = await prisma.channel.findUnique({
+        where: { id: channelId },
+        include: {
+          // Grab all members and their roles
+          members: {
+            include: {
+              user: { select: { id: true, name: true, image: true } },
+            },
+            orderBy: { role: "asc" }, // Puts OWNER at the top of the list!
+          },
+          // 🟢 NEW: Grab only messages that contain files for the "Media" tab
+          messages: {
+            where: {
+              NOT: { fileUrls: { isEmpty: true } },
+            },
+            select: { id: true, fileUrls: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+            take: 20, // Grab the 20 most recent media files
+          },
         },
-      },
-    });
+      });
 
-    if (!channel) return reply.code(404).send({ message: "Not Found" });
+      if (!channel) return reply.code(404).send({ message: "Not Found" });
 
-    // 🟢 2. SMART NAME COMPUTATION
-    let computedName = channel.name;
+      const mediaFiles = channel.messages.flatMap((msg) => msg.fileUrls);
 
-    // If it's a DM, find the OTHER person in the chat and use their name!
-    if (channel.type === "DIRECT" || !channel.name) {
-      const otherMember = channel.members.find((m) => m.userId !== userId);
-      if (otherMember) {
-        computedName = otherMember.user.name;
-      } else {
-        computedName = "Just You"; // In case it's a DM with yourself
+      // 🟢 2. SMART NAME COMPUTATION
+      let computedName = channel.name;
+      if (channel.type === "DIRECT" || !channel.name) {
+        const otherMember = channel.members.find((m) => m.userId !== userId);
+        computedName = otherMember ? otherMember.user.name : "Just You";
+      }
+
+      // 3. Send the formatted data back to React
+      return {
+        data: {
+          ...channel,
+          name: computedName, // Override the null name with the real user's name!
+          mediaFiles,
+        },
+      };
+    },
+  );
+
+  // 🟢 DELETE A CHANNEL
+  fastify.delete(
+    "/workspaces/:workspaceId/channels/:channelId",
+    { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN"])] },
+    async (request, reply) => {
+      const userId = (request as any).user.id;
+      const { channelId } = request.params as { channelId: string };
+
+      try {
+        // 1. SECURITY: Check if the user is the OWNER of the channel
+        const member = await prisma.channelMember.findUnique({
+          where: {
+            userId_channelId: { userId, channelId },
+          },
+        });
+
+        if (!member || member.role !== "OWNER") {
+          return reply
+            .code(403)
+            .send({ message: "Only the channel owner can delete this chat." });
+        }
+
+        // 2. DELETE: Prisma's Cascade will wipe the messages and members automatically!
+        await prisma.channel.delete({
+          where: { id: channelId },
+        });
+
+        // 3. 🟢 THE MAGIC: Tell Redis to kick everyone out of this room instantly!
+        chatHub.broadcast(channelId, {
+          type: "CHANNEL_DELETED",
+          data: { channelId },
+        });
+
+        return reply
+          .code(200)
+          .send({ message: "Channel deleted successfully" });
+      } catch (error) {
+        console.error("Failed to delete channel:", error);
+        return reply.code(500).send({ message: "Failed to delete channel" });
+      }
+    },
+  );
+
+  // 🟢 EDIT A CHANNEL NAME
+  fastify.patch(
+    "/workspaces/:workspaceId/channels/:channelId",
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { channelId } = request.params as { channelId: string };
+      const { name } = request.body as { name: string };
+      const userId = (request as any).user.id;
+
+      if (!name) return reply.code(400).send({ message: "Name is required" });
+
+      try {
+        // 1. Verify they are the owner of this specific channel
+        const member = await prisma.channelMember.findUnique({
+          where: { userId_channelId: { userId, channelId } },
+        });
+
+        if (!member || member.role !== "OWNER") {
+          return reply.code(403).send({ message: "Only the owner can rename this channel." });
+        }
+
+        // 2. Format the name (like Slack: lowercase with dashes)
+        const formattedName = name.toLowerCase().replace(/\s+/g, "-");
+
+        // 3. Update the database
+        const updatedChannel = await prisma.channel.update({
+          where: { id: channelId },
+          data: { name: formattedName },
+        });
+
+        // 4. Broadcast the change so everyone's sidebar updates instantly!
+        chatHub.broadcast(channelId, {
+          type: "CHANNEL_UPDATED",
+          data: updatedChannel
+        });
+
+        return reply.code(200).send({ data: updatedChannel });
+      } catch (error) {
+        console.error("Failed to rename channel:", error);
+        return reply.code(500).send({ message: "Failed to rename channel" });
       }
     }
-
-    // 3. Send the formatted data back to React
-    return {
-      data: {
-        ...channel,
-        name: computedName, // Override the null name with the real user's name!
-      },
-    };
-  });
+  );
 };
 
 export default chatRoutes;
+

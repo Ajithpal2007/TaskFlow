@@ -7,7 +7,7 @@ import { tagService } from "../../services/tag.service.js";
 import { analyticsService } from "../../services/analytics.service";
 import { prisma, WorkspaceRole } from "@repo/database";
 
-import { sendInviteEmail } from "../../services/email.service.js";
+
 import crypto from "crypto";
 
 import { requireWorkspaceRole } from "../../middleware/require-role";

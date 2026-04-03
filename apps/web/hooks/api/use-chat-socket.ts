@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { apiClient } from "@/app/lib/api-client"; // Adjust this import to match your setup
 import { toast } from "sonner";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
+import { useRouter } from "next/navigation";
 
 interface Message {
   id: string;
@@ -18,7 +19,7 @@ interface Message {
   isOptimistic?: boolean; // 🟢 Added this flag so the UI can style it differently!
 }
 
-export function useChatSocket(channelId: string | undefined, currentUser: any) {
+export function useChatSocket(channelId: string | undefined, currentUser: any, workspaceId?: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
@@ -26,6 +27,7 @@ export function useChatSocket(channelId: string | undefined, currentUser: any) {
   const socketRef = useRef<WebSocket | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const activeThreadId = useUIStore((state) => state.activeThreadId);
+  const router = useRouter();
 
   // 🟢 1. FETCH INITIAL HISTORY & CONNECT WEBSOCKET
   useEffect(() => {
@@ -126,9 +128,21 @@ export function useChatSocket(channelId: string | undefined, currentUser: any) {
           })
         );
       }
-    };
 
-    ws.onclose = () => setIsConnected(false);
+  if (payload.type === "CHANNEL_DELETED") {
+    toast.error("This channel was just deleted by the owner.");
+
+    // Kick them out of the current URL and send them to safety
+    // (Ensure you pass workspaceId into this hook so it knows where to route!)
+    if (workspaceId) {
+      router.push(`/dashboard/${workspaceId}/chat`);
+    } else {
+      router.push("/dashboard/chat");
+    }
+  }
+};
+
+ws.onclose = () => setIsConnected(false);
 
     return () => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -171,7 +185,7 @@ export function useChatSocket(channelId: string | undefined, currentUser: any) {
 
     try {
       // C. SEND IT QUIETLY IN THE BACKGROUND
-      const res = await apiClient.post("/chat/messages", {
+      const res = await apiClient.post(`/chat/messages`, {
         channelId,
         parentId: activeThreadId,
         content,

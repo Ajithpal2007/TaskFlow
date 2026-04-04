@@ -370,3 +370,18 @@ export const taskService = {
   },
 };
 
+
+export const getPriorityTasks = async (workspaceId: string, userId: string) => {
+  const tasks = await prisma.task.findMany({
+    where: {
+      project: { workspaceId },
+      assigneeId: userId,
+      priority: { in: ["HIGH", "URGENT", "MEDIUM"] },
+      status: { notIn: ["DONE", "CANCELED"] },
+    },
+    orderBy: { dueDate: "asc" },
+    take: 5,
+  });
+
+  return tasks;
+};

@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter, notFound } from "next/navigation
 import { AuthView } from "@daveyplate/better-auth-ui"; 
 import { authClient } from "@/app/lib/auth/client"; // 🟢 Import your auth client
 import { Loader2 } from "lucide-react";
-import "@daveyplate/better-auth-ui/css";
+
 
 function AuthContent() {
     const params = useParams();

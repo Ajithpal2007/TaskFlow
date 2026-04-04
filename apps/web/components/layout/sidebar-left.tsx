@@ -4,7 +4,7 @@ import { useWorkspaces } from "@/hooks/api/use-workspaces";
 import { useProjects } from "@/hooks/api/use-projects";
 import { useUIStore } from "@/app/lib/stores/use-ui-store";
 import { useWorkspaceStore } from "@/app/lib/stores/use-workspace-store";
-import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle,Activity, Presentation, CreditCard } from "lucide-react";
+import { Folder, Plus, LayoutDashboard, Inbox, ChevronsUpDown, Check, Settings2, LogOut, User, FileText, Trash2, MessageCircle, Activity, Presentation, CreditCard } from "lucide-react";
 import { useNotifications } from "@/hooks/api/use-notifications";
 
 import {
@@ -46,7 +46,7 @@ import { cn } from "@repo/ui/src/lib/utils";
 
 import ActivityLogPage from "../../app/dashboard/[workspaceId]/activity/page";
 import Image from "next/image";
- 
+
 export function SidebarLeft() {
   const router = useRouter();
   const pathname = usePathname();
@@ -75,12 +75,12 @@ export function SidebarLeft() {
   const { mutate: moveDocument } = useMoveDocument();
   const [isRootDragOver, setIsRootDragOver] = useState(false);
 
-  const isPro = 
-  activeWorkspace?.planId === "PRO" && 
-  activeWorkspace?.currentPeriodEnd && 
-  new Date(activeWorkspace.currentPeriodEnd) > new Date();
+  const isPro =
+    activeWorkspace?.planId === "PRO" &&
+    activeWorkspace?.currentPeriodEnd &&
+    new Date(activeWorkspace.currentPeriodEnd) > new Date();
 
-const planName = isPro ? "Pro Plan" : "Free Plan";
+  const planName = isPro ? "Pro Plan" : "Free Plan";
 
 
 
@@ -90,7 +90,7 @@ const planName = isPro ? "Pro Plan" : "Free Plan";
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
-             <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
@@ -212,17 +212,7 @@ const planName = isPro ? "Pro Plan" : "Free Plan";
             )}
 
 
-            {/* 🟢 NEW: Activity Log Link */}
-            {/* activeWorkspaceId && activeWorkspaceId !== "null" && (
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.includes("/activity")}>
-                  <Link href={`/dashboard/${activeWorkspaceId}/activity`}>
-                    <Activity className="h-4 w-4" />
-                    <span>Activity</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )*/}
+
 
             {activeWorkspace && (
               <SidebarMenuItem>
@@ -246,6 +236,45 @@ const planName = isPro ? "Pro Plan" : "Free Plan";
             </SidebarMenuItem>
 
 
+          </SidebarMenu>
+        </SidebarGroup>
+
+
+
+        {/* PROJECTS LIST */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="flex items-center justify-between group group-data-[collapsible=icon]:hidden">
+            Projects
+            <button
+              onClick={() => setCreateProjectModalOpen(true)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted p-1 rounded"
+              title="Create Project"
+            >
+              <Plus className="h-4 w-4 shrink-0" />
+            </button>
+          </SidebarGroupLabel>
+
+          <SidebarMenu>
+            {isProjectsLoading ? (
+              <div className="px-4 py-2 text-xs text-muted-foreground animate-pulse group-data-[collapsible=icon]:hidden">
+                Loading...
+              </div>
+            ) : projects?.length === 0 ? (
+              <div className="px-4 py-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+                No projects yet
+              </div>
+            ) : (
+              projects?.map((project: any) => (
+                <SidebarMenuItem key={project.id}>
+                  <SidebarMenuButton asChild isActive={pathname.includes(`/projects/${project.id}`)}>
+                    <Link href={`/dashboard/${activeWorkspace?.id}/projects/${project.id}`}>
+                      <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="group-data-[collapsible=icon]:hidden truncate">{project.name}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))
+            )}
           </SidebarMenu>
         </SidebarGroup>
 
@@ -321,46 +350,10 @@ const planName = isPro ? "Pro Plan" : "Free Plan";
           </div>
         </SidebarGroup>
 
-        {/* PROJECTS LIST */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center justify-between group group-data-[collapsible=icon]:hidden">
-            Projects
-            <button
-              onClick={() => setCreateProjectModalOpen(true)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted p-1 rounded"
-              title="Create Project"
-            >
-              <Plus className="h-4 w-4 shrink-0" />
-            </button>
-          </SidebarGroupLabel>
-
-          <SidebarMenu>
-            {isProjectsLoading ? (
-              <div className="px-4 py-2 text-xs text-muted-foreground animate-pulse group-data-[collapsible=icon]:hidden">
-                Loading...
-              </div>
-            ) : projects?.length === 0 ? (
-              <div className="px-4 py-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-                No projects yet
-              </div>
-            ) : (
-              projects?.map((project: any) => (
-                <SidebarMenuItem key={project.id}>
-                  <SidebarMenuButton asChild isActive={pathname.includes(`/projects/${project.id}`)}>
-                    <Link href={`/dashboard/${activeWorkspace?.id}/projects/${project.id}`}>
-                      <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <span className="group-data-[collapsible=icon]:hidden truncate">{project.name}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))
-            )}
-          </SidebarMenu>
-        </SidebarGroup>
 
 
 
-{/* 🟢 CANVAS / VISUALS GROUP */}
+        {/* 🟢 CANVAS / VISUALS GROUP */}
         <SidebarGroup>
           <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">
             Visuals
@@ -369,8 +362,8 @@ const planName = isPro ? "Pro Plan" : "Free Plan";
           <SidebarMenu>
             <SidebarMenuItem>
               {/* Check if the URL contains '/canvas' to highlight the button */}
-              <SidebarMenuButton 
-                asChild 
+              <SidebarMenuButton
+                asChild
                 isActive={pathname.includes(`/dashboard/${activeWorkspace?.id}/canvas`)}
               >
                 <Link href={`/dashboard/${activeWorkspace?.id}/canvas`}>

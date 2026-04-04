@@ -1,3 +1,8 @@
+@import "@daveyplate/better-auth-ui/css"; /* ✅ Add this here */
+
+
+@tailwind utilities;
+
 @layer base {
   :root {
     --sidebar-background: 0 0% 100%;

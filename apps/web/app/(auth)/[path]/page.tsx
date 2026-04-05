@@ -2,8 +2,8 @@
 
 import { useEffect, Suspense } from "react";
 import { useParams, useSearchParams, useRouter, notFound } from "next/navigation";
-import { AuthView } from "@daveyplate/better-auth-ui"; 
-import { authClient } from "@/app/lib/auth/client"; // 🟢 Import your auth client
+import { AuthView } from "@repo/ui/components/auth-components"; 
+import { authClient } from "@/app/lib/auth/client"; 
 import { Loader2 } from "lucide-react";
 
 

@@ -8,6 +8,10 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 import './globals.css';
 
+import "@daveyplate/better-auth-ui/css"; 
+import "@repo/ui/globals.css";
+
+
 export const metadata: Metadata = {
   title: "TaskFlow",
   description: "TaskFlow is a task management tool",

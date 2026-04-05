@@ -28,6 +28,7 @@
     "@livekit/components-styles": "^1.2.0",
     "@repo/ui": "workspace:*",
     "@repo/validators": "workspace:*",
+    "@repo/database": "workspace:*",
     "@tanstack/react-query": "^5.91.2",
     "@tiptap/extension-placeholder": "^3.20.4",
     "@tiptap/react": "^3.20.4",

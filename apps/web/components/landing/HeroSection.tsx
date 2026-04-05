@@ -16,8 +16,9 @@ const HeroSection = () => {
   return (
     <section className="relative pt-16 pb-20 lg:pt-24">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="lg:grid lg:grid-cols-2 lg:gap-12 items-center">
+        <div className="lg:grid lg:grid-cols-12 lg:gap-12 items-start">
           <motion.div
+            className="lg:col-span-5"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.2, 0, 0, 1] }}
@@ -80,15 +81,15 @@ const HeroSection = () => {
 
           {/* Hero image */}
           <motion.div
+            className="mt-16 lg:mt-0 lg:-mt-6 lg:col-span-7"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, delay: 0.2, ease: [0.2, 0, 0, 1] }}
-            className="mt-12 lg:mt-0"
           >
             <Image
               src={heroDashboard}
-              alt="TaskFlow dashboard showing Kanban board, document editor, and video call interface"
-              className="w-full rounded-2xl border border-border shadow-2xl"
+              alt="TaskFlow dashboard"
+              className="w-full rounded-2xl border border-white/10 shadow-2xl shadow-white/5 transition-transform duration-500 hover:scale-[1.02]"
               priority
             />
           </motion.div>

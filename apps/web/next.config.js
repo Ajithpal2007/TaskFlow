@@ -25,7 +25,7 @@ const nextConfig = {
       }
     ],
   },
-  transpilePackages: ['@repo/ui', '@repo/database', 'auth'],
+  transpilePackages: ['@repo/ui', '@repo/database', 'auth',"@repo/validators"],
   async rewrites() {
     return [
       {

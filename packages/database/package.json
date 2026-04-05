@@ -3,26 +3,26 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "./src/client.ts",
+  "main": "./dist/client.js",
+  
+  
   "types": "./src/client.ts",
   "exports": {
     ".": {
-      "import": "./src/client.ts",
+      "import": "./dist/client.js",
       "types": "./src/client.ts"
     }
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "generate": "prisma generate",
-    "postinstall": "prisma generate",
+    
+    
+    "build": "tsup src/client.ts --format esm --external ../generated/client",
+    
+    "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate",
-    "db:seed": "prisma db seed"
-  },
-  "prisma": {
-    "schema": "prisma/schema.prisma",
-    "seed": "ts-node-esm prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -37,6 +37,7 @@
   "devDependencies": {
     "@types/ws": "^8.18.1",
     "prisma": "^7.5.0",
-    "tsx": "^4.21.0"
+    "tsx": "^4.21.0",
+    "tsup": "^8.0.0"
   }
 }

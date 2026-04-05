@@ -3,12 +3,11 @@
   "compilerOptions": {
     "outDir": "dist",
     "strictNullChecks": true,
-
     "baseUrl": ".",
     "paths": {
-      "@repo/ui/*": ["./src/*"]
+      "@repo/ui/*": ["./src/*", "./*"] 
     }
   },
-  "include": ["src"],
+  "include": ["src", "components","src/types.d.ts"], 
   "exclude": ["node_modules", "dist"]
 }

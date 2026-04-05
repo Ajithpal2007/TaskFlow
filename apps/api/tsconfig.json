@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "jsx": "react-jsx",
+    "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "target": "es2022",
@@ -11,7 +12,6 @@
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": "./",
     "types": ["jest", "node"],
     "paths": {
       "@services/*": ["src/services/*"],

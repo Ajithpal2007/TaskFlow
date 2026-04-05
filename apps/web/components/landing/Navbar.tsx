@@ -32,19 +32,19 @@ const Navbar = () => {
         </div>
 
         {/* AUTH BUTTONS (No 'hidden' or 'md:') */}
-        <div className="flex gap-4">
+       <div className="flex gap-4">
           {isPending ? (
-            <span className="text-white">Loading Auth...</span>
+            <span className="text-gray-400">Loading Auth...</span>
           ) : session ? (
-            <Button asChild className="bg-white text-black">
+            <Button asChild className="bg-white text-black hover:bg-gray-200 hover:text-black transition-colors duration-200">
               <Link href="/dashboard">Go to Dashboard</Link>
             </Button>
           ) : (
             <>
-              <Button variant="outline" asChild className="text-white border-white">
+              <Button variant="outline" asChild className="text-gray-300 border-gray-700 hover:bg-white/10 hover:text-white transition-colors duration-200">
                 <Link href="/sign-in">Log in</Link>
               </Button>
-              <Button asChild className="bg-blue-600 text-white">
+              <Button asChild className="bg-white text-black hover:bg-gray-200 hover:text-black transition-colors duration-200">
                 <Link href="/sign-up">Sign up</Link>
               </Button>
             </>

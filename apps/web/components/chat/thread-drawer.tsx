@@ -84,7 +84,7 @@ export function ThreadDrawer() {
 
 
   // 🟢 Hook up the backend!
-  const { thread, isLoading, sendReply } = useThread(activeThreadId, channelId, currentUser);
+  const { thread, isLoading, sendReply } = useThread(activeThreadId, channelId, currentUser, workspaceId);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

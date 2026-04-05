@@ -14,12 +14,12 @@ export default function TrashPage({ params }: { params: { workspaceId: string } 
   const { mutate: deleteDoc, isPending: isDeleting } = useDeleteDocument();
 
   const handleRestore = (docId: string) => {
-    restoreDoc({ docId, isArchived: false });
+    restoreDoc({ docId, workspaceId: params.workspaceId,isArchived: false });
   };
 
   const handleDelete = (docId: string) => {
     if (confirm("Are you sure? This cannot be undone.")) {
-      deleteDoc(docId);
+      deleteDoc({ docId, workspaceId: params.workspaceId });
     }
   };
 

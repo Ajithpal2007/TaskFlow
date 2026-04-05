@@ -115,7 +115,11 @@ export async function buildServer() {
   });
 
   await fastify.register(cors, {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+   origin: [
+      "http://localhost:3000",
+      "https://task-flow-web-seven.vercel.app", 
+      process.env.FRONTEND_URL || "" 
+    ].filter(Boolean),
     credentials: true, // Crucial for sharing sessions between ports
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [

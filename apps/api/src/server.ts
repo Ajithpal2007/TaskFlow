@@ -8,7 +8,6 @@ import websocket from "@fastify/websocket";
 import { createRouteHandler } from "uploadthing/fastify";
 import { ourFileRouter } from "./lib/uploadthing";
 
-
 import { Hocuspocus } from "@hocuspocus/server";
 import { Database } from "@hocuspocus/extension-database";
 import { prisma } from "@repo/database";
@@ -28,9 +27,26 @@ export async function buildServer() {
   const fastify = Fastify({
     logger:
       process.env.NODE_ENV !== "production"
-        ? { transport: { target: "pino-pretty" } }
-        : true,
-  });
+        ? 
+          { transport: { target: "pino-pretty" } }
+        : 
+          {
+            level: "info",
+            transport: {
+              target: "pino-loki",
+              options: {
+                batching: true,
+                interval: 5,
+                host: process.env.GRAFANA_LOKI_URL,
+                basicAuth: {
+                  username: process.env.GRAFANA_LOKI_USER,
+                  password: process.env.GRAFANA_API_TOKEN,
+                },
+                labels: { application: "taskflow-backend" }, // Tags all logs in Grafana!
+              },
+            },
+          },
+  })
 
   // Call this right before fastify.listen()
 
@@ -132,7 +148,7 @@ export async function buildServer() {
   fastify.get("/", async (request, reply) => {
     // Dynamically redirect to Vercel in production, or localhost in development
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    return reply.redirect(`${frontendUrl}/dashboard`); 
+    return reply.redirect(`${frontendUrl}/dashboard`);
   });
 
   // Routes will be registered here as you build them

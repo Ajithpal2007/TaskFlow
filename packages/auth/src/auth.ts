@@ -25,7 +25,8 @@ export const getAuth = () => betterAuth({
    
   
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: ["http://localhost:3000"],
+  trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:3000",
+    "https://task-flow-web-seven.vercel.app"],
  advanced: {
     useSecureCookies: false, // Must be false for localhost (HTTP)
   },

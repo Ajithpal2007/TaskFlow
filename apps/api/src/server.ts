@@ -99,7 +99,7 @@ export async function buildServer() {
   });
 
   await fastify.register(cors, {
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true, // Crucial for sharing sessions between ports
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [
@@ -130,9 +130,9 @@ export async function buildServer() {
   }));
 
   fastify.get("/", async (request, reply) => {
-    // When Google OAuth drops them on localhost:4000,
-    // instantly ping them back to localhost:3000/dashboard
-    return reply.redirect("http://localhost:3000/dashboard");
+    // Dynamically redirect to Vercel in production, or localhost in development
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    return reply.redirect(`${frontendUrl}/dashboard`); 
   });
 
   // Routes will be registered here as you build them

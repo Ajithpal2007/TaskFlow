@@ -28,10 +28,8 @@ export async function buildServer() {
     trustProxy: true,
     logger:
       process.env.NODE_ENV !== "production"
-        ? 
-          { transport: { target: "pino-pretty" } }
-        : 
-          {
+        ? { transport: { target: "pino-pretty" } }
+        : {
             level: "info",
             transport: {
               target: "pino-loki",
@@ -47,7 +45,7 @@ export async function buildServer() {
               },
             },
           },
-  })
+  });
 
   // Call this right before fastify.listen()
 
@@ -116,11 +114,7 @@ export async function buildServer() {
   });
 
   await fastify.register(cors, {
-   origin: [
-      "http://localhost:3000",
-      "https://task-flow-web-seven.vercel.app", 
-      process.env.FRONTEND_URL || "" 
-    ].filter(Boolean),
+    origin: true,
     credentials: true, // Crucial for sharing sessions between ports
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allowedHeaders: [

@@ -25,6 +25,7 @@ import "./workers/cleanupWorker";
 
 export async function buildServer() {
   const fastify = Fastify({
+    trustProxy: true,
     logger:
       process.env.NODE_ENV !== "production"
         ? 

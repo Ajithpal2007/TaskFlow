@@ -14,22 +14,7 @@ export async function authRoutes(fastify: FastifyInstance) {
     });
 
     fastify.all("/api/auth/*", async (req, reply) => {
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-      // Add headers manually to EVERY request to be safe
-      reply.raw.setHeader(
-        "Access-Control-Allow-Origin",
-        frontendUrl,
-      );
-      reply.raw.setHeader("Access-Control-Allow-Credentials", "true");
-      reply.raw.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
-      );
-      reply.raw.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type, Authorization, Cookie",
-      );
-
+     
       if (req.method === "OPTIONS") {
         reply.raw.statusCode = 204;
         reply.raw.end();

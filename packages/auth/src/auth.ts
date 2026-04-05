@@ -28,10 +28,11 @@ export const getAuth = () => betterAuth({
   trustedOrigins: [process.env.FRONTEND_URL || "http://localhost:3000",
     "https://task-flow-web-seven.vercel.app"],
  advanced: {
-    useSecureCookies: process.env.NODE_ENV === "production", 
-  crossSubDomainCookies: {
-    enabled: process.env.NODE_ENV === "production",
-  }
+    // Force cookies to be sent across different domains securely
+    defaultCookieAttributes: {
+      sameSite: "none", // Critical for cross-domain (Vercel -> Render)
+      secure: true,     // Required when sameSite is "none"
+    },
   },
 
   secondaryStorage: {

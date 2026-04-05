@@ -14,10 +14,11 @@ export async function authRoutes(fastify: FastifyInstance) {
     });
 
     fastify.all("/api/auth/*", async (req, reply) => {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
       // Add headers manually to EVERY request to be safe
       reply.raw.setHeader(
         "Access-Control-Allow-Origin",
-        "http://localhost:3000",
+        frontendUrl,
       );
       reply.raw.setHeader("Access-Control-Allow-Credentials", "true");
       reply.raw.setHeader(

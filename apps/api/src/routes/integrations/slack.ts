@@ -2,19 +2,25 @@ import { FastifyPluginAsync } from "fastify";
 import { prisma } from "@repo/database";
 
 const slackRoutes: FastifyPluginAsync = async (fastify) => {
+
+  // 🟢 Define dynamic URLs at the top so both routes can use them
+  const apiUrl = process.env.API_URL || "http://localhost:4000";
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  
+  // Dynamically build the exact callback URI we gave to Slack
+  const redirectUri = `${apiUrl}/api/integrations/slack/callback`;
+
   // 1. Redirect to Slack's authorization page
   fastify.get("/connect/:workspaceId", async (request, reply) => {
     const { workspaceId } = request.params as { workspaceId: string };
 
     const clientId = process.env.SLACK_CLIENT_ID;
 
-    // 🟢 NEW: Add the exact HTTPS tunnel URL here!
-    const redirectUri =
-      "https://leandra-miffiest-semicolloquially.ngrok-free.dev/api/integrations/slack/callback";
+    
 
     // We pass the workspaceId as the "state" so we remember who they are when they come back!
     // 🟢 Add incoming-webhook to the scopes!
-    const redirectUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=chat:write,chat:write.public,incoming-webhook&state=${workspaceId}&redirect_uri=${redirectUri}`;
+   const redirectUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=chat:write,chat:write.public,incoming-webhook&state=${workspaceId}&redirect_uri=${redirectUri}`;
 
     return reply.redirect(redirectUrl);
   });
@@ -26,8 +32,7 @@ const slackRoutes: FastifyPluginAsync = async (fastify) => {
       state: string;
     };
 
-    const redirectUri =
-      "https://leandra-miffiest-semicolloquially.ngrok-free.dev/api/integrations/slack/callback";
+  
 
     try {
       // Exchange the code for an Access Token
@@ -47,7 +52,7 @@ const slackRoutes: FastifyPluginAsync = async (fastify) => {
       if (!data.ok) {
         console.error("❌ Slack API Error:", data.error);
         return reply.redirect(
-          `http://localhost:3000/dashboard/${workspaceId}/settings?slack=error`,
+          `${frontendUrl}/dashboard/${workspaceId}/settings?slack=error`,
         );
       }
 
@@ -62,7 +67,7 @@ const slackRoutes: FastifyPluginAsync = async (fastify) => {
 
       console.log("✅ Slack Connected Successfully!");
       return reply.redirect(
-        `http://localhost:3000/dashboard/${workspaceId}/settings?slack=success`,
+        `${frontendUrl}/dashboard/${workspaceId}/settings?slack=success`,
       );
     } catch (error) {
       // 🟢 This will catch any DB or Server errors!

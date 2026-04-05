@@ -6,12 +6,13 @@ import { useQueryClient } from "@tanstack/react-query";
 export function useBoardSocket(projectId: string) {
   const socketRef = useRef<WebSocket | null>(null);
   const queryClient = useQueryClient();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   useEffect(() => {
     if (!projectId) return;
 
     const ws = new WebSocket(
-      `ws://localhost:4000/api/projects/${projectId}/board/ws`,
+      `${apiUrl}/api/projects/${projectId}/board/ws`,
     );
     socketRef.current = ws;
 

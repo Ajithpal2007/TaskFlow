@@ -344,7 +344,7 @@ importers:
         version: 4.5.4(@floating-ui/dom@1.7.6)(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       uploadthing:
         specifier: ^7.7.4
-        version: 7.7.4(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tailwindcss@4.2.1)
+        version: 7.7.4(fastify@5.8.2)(next@14.2.35(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tailwindcss@4.2.1)
       utf-8-validate:
         specifier: ^6.0.6
         version: 6.0.6
@@ -494,9 +494,6 @@ importers:
 
   packages/ui:
     dependencies:
-      '@daveyplate/better-auth-ui':
-        specifier: ^3.3.15
-        version: 3.3.15(@better-auth/passkey@1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(better-call@1.3.2(zod@4.3.6))(nanostores@1.2.0))(@captchafox/react@1.11.0(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@daveyplate/better-auth-tanstack@1.3.6(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@hookform/resolvers@5.2.2(react-hook-form@7.71.2(react@18.3.1)))(@instantdb/react@0.22.162(react@18.3.1))(@marsidev/react-turnstile@1.4.2(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-avatar@1.1.11(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-checkbox@1.3.3(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-context@1.1.3(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-dialog@1.1.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-dropdown-menu@2.1.16(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-label@2.1.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-primitive@2.1.4(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-select@2.2.6(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-separator@1.1.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-slot@1.2.4(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-tabs@1.1.13(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-tooltip@1.2.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-use-callback-ref@1.1.1(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-use-layout-effect@1.1.1(@types/react@18.3.28)(react@18.3.1))(@tanstack/react-query@5.91.2(react@18.3.1))(@triplit/client@1.0.50(better-sqlite3@12.8.0)(typescript@5.9.2))(@triplit/react@1.0.51(better-sqlite3@12.8.0)(react@18.3.1)(typescript@5.9.2))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(class-variance-authority@0.7.1)(clsx@2.1.1)(input-otp@1.4.2(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(lucide-react@0.577.0(react@18.3.1))(react-dom@19.2.4(react@18.3.1))(react-hook-form@7.71.2(react@18.3.1))(react@18.3.1)(sonner@2.0.7(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(tailwind-merge@3.5.0)(tailwindcss@4.2.1)(zod@4.3.6)
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.71.2(react@18.3.1))
@@ -9460,7 +9457,7 @@ snapshots:
       '@better-auth/utils': 0.3.1
       '@better-fetch/fetch': 1.1.21
       '@standard-schema/spec': 1.1.0
-      better-call: 1.3.2(zod@4.3.6)
+      better-call: 1.3.2(zod@3.25.76)
       jose: 6.2.1
       kysely: 0.28.12
       nanostores: 1.2.0
@@ -9502,18 +9499,6 @@ snapshots:
       nanostores: 1.2.0
       zod: 4.3.6
 
-  ? '@better-auth/passkey@1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(better-call@1.3.2(zod@4.3.6))(nanostores@1.2.0)'
-  : dependencies:
-      '@better-auth/core': 1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0)
-      '@better-auth/utils': 0.3.1
-      '@better-fetch/fetch': 1.1.21
-      '@simplewebauthn/browser': 13.3.0
-      '@simplewebauthn/server': 13.3.0
-      better-auth: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      better-call: 1.3.2(zod@4.3.6)
-      nanostores: 1.2.0
-      zod: 4.3.6
-
   '@better-auth/prisma-adapter@1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(@prisma/client@5.22.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)))(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))':
     dependencies:
       '@better-auth/core': 1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0)
@@ -9537,14 +9522,6 @@ snapshots:
     optionalDependencies:
       '@prisma/client': 7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3))(typescript@5.9.3)
       prisma: 7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
-
-  '@better-auth/prisma-adapter@1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))':
-    dependencies:
-      '@better-auth/core': 1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0)
-      '@better-auth/utils': 0.3.1
-    optionalDependencies:
-      '@prisma/client': 7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2)
-      prisma: 7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2)
 
   '@better-auth/telemetry@1.4.21(@better-auth/core@1.4.21(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))':
     dependencies:
@@ -9677,12 +9654,6 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@captchafox/react@1.11.0(react-dom@19.2.4(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@captchafox/types': 1.4.0
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
-
   '@captchafox/types@1.4.0': {}
 
   '@cfworker/json-schema@4.1.1': {}
@@ -9722,14 +9693,6 @@ snapshots:
       better-auth: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-
-  '@daveyplate/better-auth-tanstack@1.3.6(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(react-dom@19.2.4(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@tanstack/query-core': 5.91.2
-      '@tanstack/react-query': 5.91.2(react@18.3.1)
-      better-auth: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
 
   ? '@daveyplate/better-auth-ui@3.3.15(@better-auth/passkey@1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(better-call@1.3.2(zod@3.25.76))(nanostores@1.2.0))(@captchafox/react@1.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@daveyplate/better-auth-tanstack@1.3.6(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@hookform/resolvers@5.2.2(react-hook-form@7.71.2(react@18.3.1)))(@instantdb/react@0.22.162(react@18.3.1))(@marsidev/react-turnstile@1.4.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-avatar@1.1.11(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-checkbox@1.3.3(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-context@1.1.3(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-dialog@1.1.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-dropdown-menu@2.1.16(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-label@2.1.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-primitive@2.1.4(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-select@2.2.6(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-separator@1.1.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-slot@1.2.4(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-tabs@1.1.13(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-tooltip@1.2.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@radix-ui/react-use-callback-ref@1.1.1(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-use-layout-effect@1.1.1(@types/react@18.3.28)(react@18.3.1))(@tanstack/react-query@5.91.2(react@18.3.1))(@triplit/client@1.0.50(better-sqlite3@12.8.0)(typescript@5.9.2))(@triplit/react@1.0.51(better-sqlite3@12.8.0)(react@18.3.1)(typescript@5.9.2))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(class-variance-authority@0.7.1)(clsx@2.1.1)(input-otp@1.4.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(lucide-react@0.577.0(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react-hook-form@7.71.2(react@18.3.1))(react@18.3.1)(sonner@2.0.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tailwind-merge@3.5.0)(tailwindcss@4.2.1)(zod@3.25.76)'
   : dependencies:
@@ -9777,56 +9740,6 @@ snapshots:
       ua-parser-js: 2.0.9
       vaul: 1.1.2(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       zod: 3.25.76
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-
-  ? '@daveyplate/better-auth-ui@3.3.15(@better-auth/passkey@1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(better-call@1.3.2(zod@4.3.6))(nanostores@1.2.0))(@captchafox/react@1.11.0(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@daveyplate/better-auth-tanstack@1.3.6(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@hookform/resolvers@5.2.2(react-hook-form@7.71.2(react@18.3.1)))(@instantdb/react@0.22.162(react@18.3.1))(@marsidev/react-turnstile@1.4.2(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-avatar@1.1.11(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-checkbox@1.3.3(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-context@1.1.3(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-dialog@1.1.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-dropdown-menu@2.1.16(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-label@2.1.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-primitive@2.1.4(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-select@2.2.6(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-separator@1.1.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-slot@1.2.4(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-tabs@1.1.13(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-tooltip@1.2.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(@radix-ui/react-use-callback-ref@1.1.1(@types/react@18.3.28)(react@18.3.1))(@radix-ui/react-use-layout-effect@1.1.1(@types/react@18.3.28)(react@18.3.1))(@tanstack/react-query@5.91.2(react@18.3.1))(@triplit/client@1.0.50(better-sqlite3@12.8.0)(typescript@5.9.2))(@triplit/react@1.0.51(better-sqlite3@12.8.0)(react@18.3.1)(typescript@5.9.2))(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(class-variance-authority@0.7.1)(clsx@2.1.1)(input-otp@1.4.2(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(lucide-react@0.577.0(react@18.3.1))(react-dom@19.2.4(react@18.3.1))(react-hook-form@7.71.2(react@18.3.1))(react@18.3.1)(sonner@2.0.7(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(tailwind-merge@3.5.0)(tailwindcss@4.2.1)(zod@4.3.6)'
-  : dependencies:
-      '@better-auth/passkey': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(better-call@1.3.2(zod@4.3.6))(nanostores@1.2.0)
-      '@better-fetch/fetch': 1.1.21
-      '@captchafox/react': 1.11.0(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@daveyplate/better-auth-tanstack': 1.3.6(@tanstack/query-core@5.91.2)(@tanstack/react-query@5.91.2(react@18.3.1))(better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@hcaptcha/react-hcaptcha': 1.17.4(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@hookform/resolvers': 5.2.2(react-hook-form@7.71.2(react@18.3.1))
-      '@instantdb/react': 0.22.162(react@18.3.1)
-      '@marsidev/react-turnstile': 1.4.2(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@noble/hashes': 2.0.1
-      '@radix-ui/react-avatar': 1.1.11(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-checkbox': 1.3.3(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-context': 1.1.3(@types/react@18.3.28)(react@18.3.1)
-      '@radix-ui/react-dialog': 1.1.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-label': 2.1.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-primitive': 2.1.4(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-select': 2.2.6(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-separator': 1.1.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-slot': 1.2.4(@types/react@18.3.28)(react@18.3.1)
-      '@radix-ui/react-tabs': 1.1.13(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-tooltip': 1.2.8(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@radix-ui/react-use-callback-ref': 1.1.1(@types/react@18.3.28)(react@18.3.1)
-      '@radix-ui/react-use-layout-effect': 1.1.1(@types/react@18.3.28)(react@18.3.1)
-      '@react-email/components': 1.0.9(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@tanstack/react-query': 5.91.2(react@18.3.1)
-      '@triplit/client': 1.0.50(better-sqlite3@12.8.0)(typescript@5.9.2)
-      '@triplit/react': 1.0.51(better-sqlite3@12.8.0)(react@18.3.1)(typescript@5.9.2)
-      '@wojtekmaj/react-recaptcha-v3': 0.1.4(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      better-auth: 1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      class-variance-authority: 0.7.1
-      clsx: 2.1.1
-      input-otp: 1.4.2(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      lucide-react: 0.577.0(react@18.3.1)
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
-      react-google-recaptcha: 3.1.0(react@18.3.1)
-      react-hook-form: 7.71.2(react@18.3.1)
-      react-qr-code: 2.0.18(react@18.3.1)
-      sonner: 2.0.7(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      tailwind-merge: 3.5.0
-      tailwindcss: 4.2.1
-      ua-parser-js: 2.0.9
-      vaul: 1.1.2(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      zod: 4.3.6
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
@@ -10215,13 +10128,6 @@ snapshots:
       '@hcaptcha/loader': 2.3.0
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-
-  '@hcaptcha/react-hcaptcha@1.17.4(react-dom@19.2.4(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@babel/runtime': 7.29.2
-      '@hcaptcha/loader': 2.3.0
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
 
   '@hexagon/base64@1.1.28': {}
 
@@ -10764,11 +10670,6 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@marsidev/react-turnstile@1.4.2(react-dom@19.2.4(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
-
   '@mongodb-js/saslprep@1.4.6':
     dependencies:
       sparse-bitfield: 3.0.3
@@ -11024,14 +10925,6 @@ snapshots:
       typescript: 5.9.3
     optional: true
 
-  '@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2)':
-    dependencies:
-      '@prisma/client-runtime-utils': 7.5.0
-    optionalDependencies:
-      prisma: 7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2)
-      typescript: 5.9.2
-    optional: true
-
   '@prisma/client@7.5.0(prisma@7.5.0(@types/react@19.2.2)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)':
     dependencies:
       '@prisma/client-runtime-utils': 7.5.0
@@ -11131,13 +11024,6 @@ snapshots:
       '@types/react': 18.3.28
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-    optional: true
-
-  '@prisma/studio-core@0.21.1(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@types/react': 18.3.28
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
     optional: true
 
   '@prisma/studio-core@0.21.1(@types/react@19.2.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
@@ -12711,32 +12597,6 @@ snapshots:
     transitivePeerDependencies:
       - react-dom
 
-  '@react-email/components@1.0.9(react-dom@19.2.4(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@react-email/body': 0.3.0(react@18.3.1)
-      '@react-email/button': 0.2.1(react@18.3.1)
-      '@react-email/code-block': 0.2.1(react@18.3.1)
-      '@react-email/code-inline': 0.0.6(react@18.3.1)
-      '@react-email/column': 0.0.14(react@18.3.1)
-      '@react-email/container': 0.0.16(react@18.3.1)
-      '@react-email/font': 0.0.10(react@18.3.1)
-      '@react-email/head': 0.0.13(react@18.3.1)
-      '@react-email/heading': 0.0.16(react@18.3.1)
-      '@react-email/hr': 0.0.12(react@18.3.1)
-      '@react-email/html': 0.0.12(react@18.3.1)
-      '@react-email/img': 0.0.12(react@18.3.1)
-      '@react-email/link': 0.0.13(react@18.3.1)
-      '@react-email/markdown': 0.0.18(react@18.3.1)
-      '@react-email/preview': 0.0.14(react@18.3.1)
-      '@react-email/render': 2.0.4(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      '@react-email/row': 0.0.13(react@18.3.1)
-      '@react-email/section': 0.0.17(react@18.3.1)
-      '@react-email/tailwind': 2.0.5(@react-email/body@0.3.0(react@18.3.1))(@react-email/button@0.2.1(react@18.3.1))(@react-email/code-block@0.2.1(react@18.3.1))(@react-email/code-inline@0.0.6(react@18.3.1))(@react-email/container@0.0.16(react@18.3.1))(@react-email/heading@0.0.16(react@18.3.1))(@react-email/hr@0.0.12(react@18.3.1))(@react-email/img@0.0.12(react@18.3.1))(@react-email/link@0.0.13(react@18.3.1))(@react-email/preview@0.0.14(react@18.3.1))(@react-email/text@0.1.6(react@18.3.1))(react@18.3.1)
-      '@react-email/text': 0.1.6(react@18.3.1)
-      react: 18.3.1
-    transitivePeerDependencies:
-      - react-dom
-
   '@react-email/container@0.0.16(react@18.3.1)':
     dependencies:
       react: 18.3.1
@@ -12798,13 +12658,6 @@ snapshots:
       prettier: 3.8.1
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-
-  '@react-email/render@2.0.4(react-dom@19.2.4(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      html-to-text: 9.0.5
-      prettier: 3.8.1
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
 
   '@react-email/render@2.0.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
@@ -13725,9 +13578,9 @@ snapshots:
       '@uploadthing/shared': 7.1.10
       file-selector: 0.6.0
       react: 18.3.1
-      uploadthing: 7.7.4(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tailwindcss@4.2.1)
+      uploadthing: 7.7.4(fastify@5.8.2)(next@14.2.35(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tailwindcss@4.2.1)
     optionalDependencies:
-      next: 14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 14.2.35(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   '@uploadthing/shared@7.1.10':
     dependencies:
@@ -13748,14 +13601,6 @@ snapshots:
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      warning: 4.0.3
-    optionalDependencies:
-      '@types/react': 18.3.28
-
-  '@wojtekmaj/react-recaptcha-v3@0.1.4(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
       warning: 4.0.3
     optionalDependencies:
       '@types/react': 18.3.28
@@ -14111,7 +13956,7 @@ snapshots:
       drizzle-orm: 0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1)
       mongodb: 7.1.0
       mysql2: 3.15.3
-      next: 14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 14.2.35(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       pg: 8.20.0
       prisma: 7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.2)
       react: 18.3.1
@@ -14149,39 +13994,6 @@ snapshots:
       prisma: 7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-    transitivePeerDependencies:
-      - '@cloudflare/workers-types'
-
-  better-auth@1.5.5(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(better-sqlite3@12.8.0)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))(mongodb@7.1.0)(mysql2@3.15.3)(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1))(pg@8.20.0)(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(react-dom@19.2.4(react@18.3.1))(react@18.3.1):
-    dependencies:
-      '@better-auth/core': 1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0)
-      '@better-auth/drizzle-adapter': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(drizzle-orm@0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1))
-      '@better-auth/kysely-adapter': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(kysely@0.28.12)
-      '@better-auth/memory-adapter': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)
-      '@better-auth/mongo-adapter': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(mongodb@7.1.0)
-      '@better-auth/prisma-adapter': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))(@better-auth/utils@0.3.1)(@prisma/client@7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2))(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))
-      '@better-auth/telemetry': 1.5.5(@better-auth/core@1.5.5(@better-auth/utils@0.3.1)(@better-fetch/fetch@1.1.21)(better-call@1.3.2(zod@4.3.6))(jose@6.2.1)(kysely@0.28.12)(nanostores@1.2.0))
-      '@better-auth/utils': 0.3.1
-      '@better-fetch/fetch': 1.1.21
-      '@noble/ciphers': 2.1.1
-      '@noble/hashes': 2.0.1
-      better-call: 1.3.2(zod@4.3.6)
-      defu: 6.1.4
-      jose: 6.2.1
-      kysely: 0.28.12
-      nanostores: 1.2.0
-      zod: 4.3.6
-    optionalDependencies:
-      '@prisma/client': 7.5.0(prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2))(typescript@5.9.2)
-      better-sqlite3: 12.8.0
-      drizzle-orm: 0.30.10(@electric-sql/pglite@0.3.15)(@neondatabase/serverless@1.0.2)(@opentelemetry/api@1.9.0)(@types/pg@8.18.0)(@types/react@18.3.28)(better-sqlite3@12.8.0)(kysely@0.28.12)(mysql2@3.15.3)(pg@8.20.0)(postgres@3.4.7)(react@18.3.1)
-      mongodb: 7.1.0
-      mysql2: 3.15.3
-      next: 14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      pg: 8.20.0
-      prisma: 7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2)
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
     transitivePeerDependencies:
       - '@cloudflare/workers-types'
 
@@ -15434,7 +15246,7 @@ snapshots:
 
   geist@1.7.0(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)):
     dependencies:
-      next: 14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      next: 14.2.35(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   generate-function@2.3.1:
     dependencies:
@@ -15819,11 +15631,6 @@ snapshots:
     dependencies:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-
-  input-otp@1.4.2(react-dom@19.2.4(react@18.3.1))(react@18.3.1):
-    dependencies:
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
 
   internal-slot@1.1.0:
     dependencies:
@@ -17142,61 +16949,6 @@ snapshots:
       - '@babel/core'
       - babel-plugin-macros
 
-  next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      '@next/env': 14.2.35
-      '@swc/helpers': 0.5.5
-      busboy: 1.6.0
-      caniuse-lite: 1.0.30001780
-      graceful-fs: 4.2.11
-      postcss: 8.4.31
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
-      styled-jsx: 5.1.1(@babel/core@7.29.0)(react@18.3.1)
-    optionalDependencies:
-      '@next/swc-darwin-arm64': 14.2.33
-      '@next/swc-darwin-x64': 14.2.33
-      '@next/swc-linux-arm64-gnu': 14.2.33
-      '@next/swc-linux-arm64-musl': 14.2.33
-      '@next/swc-linux-x64-gnu': 14.2.33
-      '@next/swc-linux-x64-musl': 14.2.33
-      '@next/swc-win32-arm64-msvc': 14.2.33
-      '@next/swc-win32-ia32-msvc': 14.2.33
-      '@next/swc-win32-x64-msvc': 14.2.33
-      '@opentelemetry/api': 1.9.0
-      '@playwright/test': 1.59.1
-    transitivePeerDependencies:
-      - '@babel/core'
-      - babel-plugin-macros
-
-  next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@18.3.1))(react@18.3.1):
-    dependencies:
-      '@next/env': 14.2.35
-      '@swc/helpers': 0.5.5
-      busboy: 1.6.0
-      caniuse-lite: 1.0.30001780
-      graceful-fs: 4.2.11
-      postcss: 8.4.31
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
-      styled-jsx: 5.1.1(@babel/core@7.29.0)(react@18.3.1)
-    optionalDependencies:
-      '@next/swc-darwin-arm64': 14.2.33
-      '@next/swc-darwin-x64': 14.2.33
-      '@next/swc-linux-arm64-gnu': 14.2.33
-      '@next/swc-linux-arm64-musl': 14.2.33
-      '@next/swc-linux-x64-gnu': 14.2.33
-      '@next/swc-linux-x64-musl': 14.2.33
-      '@next/swc-win32-arm64-msvc': 14.2.33
-      '@next/swc-win32-ia32-msvc': 14.2.33
-      '@next/swc-win32-x64-msvc': 14.2.33
-      '@opentelemetry/api': 1.9.0
-      '@playwright/test': 1.59.1
-    transitivePeerDependencies:
-      - '@babel/core'
-      - babel-plugin-macros
-    optional: true
-
   next@16.1.7(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@next/env': 16.1.7
@@ -17653,24 +17405,6 @@ snapshots:
     optionalDependencies:
       better-sqlite3: 12.8.0
       typescript: 5.9.3
-    transitivePeerDependencies:
-      - '@types/react'
-      - magicast
-      - react
-      - react-dom
-    optional: true
-
-  prisma@7.5.0(@types/react@18.3.28)(better-sqlite3@12.8.0)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)(typescript@5.9.2):
-    dependencies:
-      '@prisma/config': 7.5.0
-      '@prisma/dev': 0.20.0(typescript@5.9.2)
-      '@prisma/engines': 7.5.0
-      '@prisma/studio-core': 0.21.1(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      mysql2: 3.15.3
-      postgres: 3.4.7
-    optionalDependencies:
-      better-sqlite3: 12.8.0
-      typescript: 5.9.2
     transitivePeerDependencies:
       - '@types/react'
       - magicast
@@ -18596,11 +18330,6 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  sonner@2.0.7(react-dom@19.2.4(react@18.3.1))(react@18.3.1):
-    dependencies:
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
-
   sorted-btree@1.8.1: {}
 
   source-map-js@1.2.1: {}
@@ -19215,17 +18944,6 @@ snapshots:
       next: 14.2.35(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       tailwindcss: 4.2.1
 
-  uploadthing@7.7.4(next@14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(tailwindcss@4.2.1):
-    dependencies:
-      '@effect/platform': 0.90.3(effect@3.17.7)
-      '@standard-schema/spec': 1.0.0-beta.4
-      '@uploadthing/mime-types': 0.3.6
-      '@uploadthing/shared': 7.1.10
-      effect: 3.17.7
-    optionalDependencies:
-      next: 14.2.35(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      tailwindcss: 4.2.1
-
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
@@ -19311,15 +19029,6 @@ snapshots:
       '@radix-ui/react-dialog': 1.1.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-    transitivePeerDependencies:
-      - '@types/react'
-      - '@types/react-dom'
-
-  vaul@1.1.2(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1):
-    dependencies:
-      '@radix-ui/react-dialog': 1.1.15(@types/react-dom@18.3.7(@types/react@18.3.28))(@types/react@18.3.28)(react-dom@19.2.4(react@18.3.1))(react@18.3.1)
-      react: 18.3.1
-      react-dom: 19.2.4(react@18.3.1)
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'

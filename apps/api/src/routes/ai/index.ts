@@ -53,10 +53,12 @@ export default async function aiRoutes(fastify: FastifyInstance) {
           temperature: 0.5,
         });
 
+        const origin = process.env.FRONTEND_URL || "http://localhost:3000";
+
         // 1. Send the correct headers so CORS and Chrome are happy
         reply.raw.writeHead(200, {
           "Content-Type": "text/plain; charset=utf-8",
-          "Access-Control-Allow-Origin": "http://localhost:3000",
+          "Access-Control-Allow-Origin": origin,
           "Access-Control-Allow-Credentials": "true",
           "Cache-Control": "no-cache, no-transform",
           Connection: "keep-alive",
@@ -243,12 +245,14 @@ export default async function aiRoutes(fastify: FastifyInstance) {
       `);
       const chain = prompt.pipe(model).pipe(parser);
 
+      const origin = process.env.FRONTEND_URL || "http://localhost:3000";
+
       // 🟢 3. The SSE Streaming Headers (Keep these exactly the same)
       reply.raw.writeHead(200, {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache, no-transform",
         Connection: "keep-alive",
-        "Access-Control-Allow-Origin": "http://localhost:3000",
+        "Access-Control-Allow-Origin": origin,
         "Access-Control-Allow-Credentials": "true",
       });
 

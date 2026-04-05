@@ -115,12 +115,13 @@ function CollaborativeEditor({ roomId, workspaceId, boardId }: { roomId: string,
 // 🟢 3. THE AUTH PROVIDER WRAPPER
 // Notice we added workspaceId and boardId here!
 export function Whiteboard({ roomId, workspaceId, boardId }: { roomId: string, workspaceId: string, boardId: string }) {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   return (
     <LiveblocksProvider 
       authEndpoint={async (room) => {
         try {
           const response = await apiClient.post(
-            "http://localhost:4000/api/canvas/liveblocks-auth", 
+            `${apiUrl}/api/canvas/liveblocks-auth`,
             { room },
             { withCredentials: true } 
           );

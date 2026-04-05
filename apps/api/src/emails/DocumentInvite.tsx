@@ -21,12 +21,14 @@ interface DocumentInviteProps {
   actionLink: string;
 }
 
+const baseUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const DocumentInviteEmail = ({
   inviterName = "A teammate",
   documentTitle = "Untitled Document",
   accessLevel = "EDITOR",
   isNewUser = true, // Set to true for local preview testing!
-  actionLink = "http://localhost:3000/signup",
+  actionLink = `${baseUrl}/signup`,
 }: DocumentInviteProps) => {
   const previewText = isNewUser 
     ? `${inviterName} invited you to join TaskFlow`

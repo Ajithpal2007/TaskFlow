@@ -24,6 +24,8 @@ export function CreateTaskDialog({ projectId, workspaceId }: { projectId: string
   const { createTask, isCreating } = useTasks(projectId);
   const { broadcastUpdate } = useBoardSocket(projectId);
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
   const form = useForm<CreateTaskInput>({
     resolver: zodResolver(createTaskSchema),
     defaultValues: {
@@ -51,7 +53,7 @@ export function CreateTaskDialog({ projectId, workspaceId }: { projectId: string
     setCompletion(""); // Clear the box
 
     try {
-      const response = await fetch("http://localhost:4000/api/ai/generate-task", {
+      const response = await fetch(`${apiUrl}/api/ai/generate-task`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: `Draft a technical ticket for this title: ${title}` }),

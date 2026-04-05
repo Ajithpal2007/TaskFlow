@@ -26,7 +26,7 @@ export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
 
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 
   const addInputRef = useRef<HTMLInputElement>(null);
@@ -73,7 +73,7 @@ export function TaskSubtasks({ task, createSubtask, updateSubtask, deleteSubtask
 
     try {
       // 🟢 2. Inject it safely into the URL
-      const res = await fetch(`http://localhost:4000/api/ai/${workspaceId}/generate-subtasks`, {
+      const res = await fetch(`${apiUrl}/api/ai/${workspaceId}/generate-subtasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

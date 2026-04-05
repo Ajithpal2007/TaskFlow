@@ -18,9 +18,11 @@ interface WelcomeEmailProps {
   dashboardLink: string;
 }
 
+const baseUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const WelcomeEmail = ({
   userName = "Ajith",
-  dashboardLink = "http://localhost:3000/dashboard",
+  dashboardLink = `${baseUrl}/dashboard`,
 }: WelcomeEmailProps) => {
   const previewText = "Welcome to TaskFlow! Your unified workspace is ready.";
 

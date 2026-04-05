@@ -13,12 +13,14 @@ export default function ZapierIntegration({ workspaceId }: { workspaceId: string
   const [webhookUrl, setWebhookUrl] = useState("");
   const [isSavingUrl, setIsSavingUrl] = useState(false);
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
   // --- API Key Functions ---
   const generateNewKey = async () => {
     if (confirm("Generating a new key will instantly break any existing Zapier connections. Are you sure?")) {
       setIsGenerating(true);
       try {
-        const res = await fetch(`http://localhost:4000/api/workspaces/${workspaceId}/api-key`, {
+        const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/api-key`, {
           method: "POST",
           credentials: "include", 
         });
@@ -50,7 +52,7 @@ export default function ZapierIntegration({ workspaceId }: { workspaceId: string
   const saveWebhookUrl = async () => {
     setIsSavingUrl(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/workspaces/${workspaceId}/webhook`, {
+      const res = await fetch(`${apiUrl}/api/workspaces/${workspaceId}/webhook`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ webhookUrl }),

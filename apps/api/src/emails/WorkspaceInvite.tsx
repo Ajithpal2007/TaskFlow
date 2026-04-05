@@ -19,10 +19,12 @@ interface WorkspaceInviteProps {
   inviteLink: string;
 }
 
+const baseUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const WorkspaceInviteEmail = ({
   inviterName = "A teammate",
   workspaceName = "their workspace",
-  inviteLink = "http://localhost:3000/invite?token=demo",
+  inviteLink = `${baseUrl}/invite?token=demo`,
 }: WorkspaceInviteProps) => {
   const previewText = `Join ${workspaceName} on TaskFlow`;
 

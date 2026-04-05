@@ -31,7 +31,7 @@
     "typescript": "5.9.2"
   },
   "dependencies": {
-    "@daveyplate/better-auth-ui": "^3.3.15",
+    
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.3.3",

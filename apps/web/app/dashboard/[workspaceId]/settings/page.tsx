@@ -22,6 +22,8 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
   const myWorkspaceMemberData = workspace?.members?.find((m: any) => m.userId === currentUserId);
   const myRole = myWorkspaceMemberData?.role;
   const canManageInvites = myRole === "OWNER" || myRole === "ADMIN";
@@ -274,7 +276,7 @@ export default function WorkspaceSettingsPage({ params }: { params: { workspaceI
             Connect TaskFlow to your favorite tools to keep your team in sync.
           </p>
 
-          <a href={`http://localhost:4000/api/integrations/slack/connect/${params.workspaceId}`}>
+          <a href={`${apiUrl}/api/integrations/slack/connect/${params.workspaceId}`}>
             <Button variant="outline" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               Connect to Slack

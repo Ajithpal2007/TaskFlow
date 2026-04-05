@@ -15,7 +15,7 @@ interface TaskDescriptionProps {
 
 export function TaskDescription({ task , updateTask}: TaskDescriptionProps) {
 
-  
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   const [description, setDescription] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -54,7 +54,7 @@ const workspaceId = params.workspaceId as string;
       : `Draft a professional technical ticket for this title in HTML format: ${task.title}`;
 
     try {
-      const response = await fetch(`http://localhost:4000/api/ai/${workspaceId}/generate-task`, {
+      const response = await fetch(`${apiUrl}/api/ai/${workspaceId}/generate-task`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: aiPrompt }),

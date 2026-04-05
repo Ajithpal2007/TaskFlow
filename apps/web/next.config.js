@@ -27,10 +27,13 @@ const nextConfig = {
   },
   transpilePackages: ['@repo/ui', '@repo/database', 'auth',"@repo/validators"],
   async rewrites() {
+    // Dynamically choose the Render URL in production, or localhost in development
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:4000/api/auth/:path*',
+        destination: `${apiUrl}/api/auth/:path*`, 
       },
     ];
   },

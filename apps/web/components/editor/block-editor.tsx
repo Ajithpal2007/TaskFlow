@@ -139,6 +139,7 @@ export const MentionPill = createReactInlineContentSpec(
 function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLocked, }: any) {
   const { resolvedTheme } = useTheme();
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
@@ -183,7 +184,7 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
       });
 
       // Step C: Connect to your Fastify SSE route
-      const response = await fetch(`http://localhost:4000/api/ai/${workspaceId}/editor-assist`, {
+      const response = await fetch(`${apiUrl}/api/ai/${workspaceId}/editor-assist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -276,7 +277,7 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
       const targetBlock = editor.getTextCursorPosition().nextBlock!;
 
       // 3. Connect to your Fastify SSE route
-      const response = await fetch(`http://localhost:4000/api/ai/${workspaceId}/editor-assist`, {
+      const response = await fetch(`${apiUrl}/api/ai/${workspaceId}/editor-assist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -468,13 +469,14 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
 export default function BlockEditor(props: BlockEditorProps) {
   const [yDoc, setYDoc] = useState<Y.Doc>();
   const [provider, setProvider] = useState<HocuspocusProvider>();
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   useEffect(() => {
     const doc = new Y.Doc();
 
     // Initialize Hocuspocus Provider
     const hocuspocusProvider = new HocuspocusProvider({
-      url: "ws://localhost:4000/api/collaboration", // Matches your new backend route!
+      url: `${apiUrl}/api/collaboration`, // Matches your new backend route!
       name: props.documentId, // This is passed as `documentName` to your Fastify Database extension
       document: doc,
       onConnect: () => {

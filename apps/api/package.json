@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node --require tsconfig-paths/register --import tsx --watch --env-file=../../.env --import ./src/tracing.ts src/index.ts",
     "build": "tsup", 
-    "start": "node --require ./dist/tracing.js dist/index.js",
+    "start": "node --import ./dist/tracing.js dist/index.js",
     "lint": "biome lint ./src",
     "email": "email dev --dir src/emails --port 3001",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"

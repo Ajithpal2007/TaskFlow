@@ -1,159 +1,79 @@
-# Turborepo starter
+# 🚀 TaskFlow
 
-This Turborepo starter is maintained by the Turborepo core team.
+![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js)
+![Fastify](https://img.shields.io/badge/Fastify-202020?style=for-the-badge&logo=fastify)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql)
+![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis)
+![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana)
 
-## Using this example
+> A highly scalable, real-time task management and collaboration platform built with a distributed architecture. 
 
-Run the following command:
+**[Live Demo](https://task-flow-web-seven.vercel.app)** | **[API Documentation](#)** | **[Report a Bug](#)**
 
-```sh
-npx create-turbo@latest
-```
+---
 
-## What's inside?
+## 🏗 System Architecture
 
-This Turborepo includes the following packages/apps:
+*Below is the high-level architecture demonstrating the separation of concerns between the edge-deployed frontend and the stateful, fully-monitored backend infrastructure.*
 
-### Apps and Packages
+<div align="center">
+  <img src="./docs/architecture-diagram.png" alt="TaskFlow System Architecture" width="800"/>
+</div>
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## 🧠 Engineering Highlights & Technical Challenges
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+Building TaskFlow required solving several enterprise-level distributed system challenges. 
 
-### Utilities
+### 1. Cross-Domain Authentication & Session Management
+Separating the frontend (Serverless Edge) and backend (PaaS) introduced significant hurdles with modern browser privacy policies (Third-Party Cookies).
+* **Challenge:** Google Chrome and Safari actively block cross-site cookies, resulting in dropped sessions between `vercel.app` and `onrender.com`.
+* **Solution:** Engineered a robust, dynamic CORS pipeline within Fastify that explicitly mirrors the request origin. Configured `better-auth` to utilize secure, `SameSite="none"` cookies while dynamically instructing the Node server to trust upstream load balancer proxies. Intercepted raw Fastify headers using adapter functions to ensure the auth middleware could properly decrypt cross-domain payloads.
 
-This Turborepo has some additional tools already setup for you:
+### 2. Distributed Observability (The LGTM Stack)
+To ensure high availability and rapid debugging, the platform relies on a complete telemetry pipeline rather than standard console logging.
+* **Logs:** Integrated `pino` with Grafana Loki, batching and streaming structured JSON logs asynchronously to prevent event-loop blocking.
+* **Traces:** Implemented OpenTelemetry (OTel) auto-instrumentation. Injected a tracer pre-boot to map distributed request lifecycles (waterfall tracing) across Fastify, Prisma, and Redis, exporting data to Grafana Tempo via OTLP over HTTP.
+* **Metrics:** Utilized Prometheus client libraries to expose a `/metrics` endpoint, tracking CPU/memory consumption, route response times, and custom business-logic counters (e.g., successful workspace generations).
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+### 3. Real-Time Collaboration & WebSockets
+* **Architecture:** Leveraged `yjs` (CRDTs) and `@hocuspocus/server` running on a dedicated Fastify WebSocket route.
+* **Persistence:** Built a custom database extension to serialize binary Yjs state directly into PostgreSQL via Prisma, ensuring concurrent user edits are perfectly synced and safely persisted without data loss.
 
-### Build
+---
 
-To build all apps and packages, run the following command:
+## 🛠 Tech Stack
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+### Frontend (Client)
+* **Framework:** Next.js (React)
+* **State Management:** React Query (TanStack), Zustand
+* **Styling:** Tailwind CSS, Radix UI
 
-```sh
-cd my-turborepo
-turbo build
-```
+### Backend (API)
+* **Core:** Node.js, Fastify, TypeScript
+* **Database & ORM:** PostgreSQL, Prisma
+* **Caching & Queues:** Redis, Upstash
+* **Authentication:** Better Auth
+* **Real-time Engine:** WebSockets, Hocuspocus (Yjs)
 
-Without global `turbo`, use your package manager:
+### DevOps & Observability
+* **Hosting:** Vercel (Frontend), Render (Backend)
+* **Telemetry:** OpenTelemetry, Grafana Cloud (Loki, Tempo, Mimir)
+* **Bundler:** Tsup
 
-```sh
-cd my-turborepo
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+---
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## 💻 Local Development
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+### Prerequisites
+* Node.js (v18+)
+* pnpm
+* PostgreSQL (Running locally or via Docker)
+* Redis
 
-```sh
-turbo build --filter=docs
-```
+### Quick Start
 
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+1. **Clone the repository**
+   ```bash
+   git clone [https://github.com/yourusername/taskflow.git](https://github.com/yourusername/taskflow.git)
+   cd taskflow

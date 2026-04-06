@@ -5,6 +5,10 @@ import { authRoutes } from "./routes/users/index.js";
 
 import websocket from "@fastify/websocket";
 
+import fastifyMetrics from "fastify-metrics";
+
+import type { FastifyRequest } from "fastify";
+
 import { createRouteHandler } from "uploadthing/fastify";
 import { ourFileRouter } from "./lib/uploadthing";
 
@@ -52,11 +56,12 @@ export async function buildServer() {
   await fastify.register(websocket);
 
   fastify.register(fastifyRateLimit, {
-    global: true, // 🟢 ON BY DEFAULT FOR ALL ROUTES
-    max: 150, // 150 requests...
-    timeWindow: "1 minute", // ...per minute
+    global: true,
+    max: 150,
+    timeWindow: "1 minute",
     redis: redisConnection,
-    errorResponseBuilder: (request, context) => ({
+    // 🟢 Explicitly type request and context
+    errorResponseBuilder: (request: FastifyRequest, context: any) => ({
       success: false,
       message: `Whoa there! You're moving too fast. Please wait ${context.after}.`,
     }),
@@ -68,15 +73,19 @@ export async function buildServer() {
     encoding: "utf8",
   });
 
-  // 🟢 Add this Global Test Route to bypass all middleware!
-  fastify.get("/ws-test", { websocket: true }, (connection, request) => {
-    console.log("🟢 GLOBAL WS TEST HIT!");
-    connection.send("Hello from the Global Bypass Route!");
+  fastify.get(
+    "/ws-test",
+    { websocket: true } as any,
+    (connection: any, request: FastifyRequest) => {
+      console.log("🟢 GLOBAL WS TEST HIT!");
+      connection.send("Hello from the Global Bypass Route!");
 
-    connection.on("message", (msg) => {
-      console.log("Global received:", msg.toString());
-    });
-  });
+      // 🟢 Explicitly type 'msg' as any
+      connection.on("message", (msg: any) => {
+        console.log("Global received:", msg.toString());
+      });
+    },
+  );
 
   const hocuspocusServer = new Hocuspocus({
     extensions: [
@@ -106,12 +115,15 @@ export async function buildServer() {
     ],
   });
 
-  // 2. Fastify WebSocket Route
-  // Note: In newer @fastify/websocket, the first arg is the 'socket' directly
-  fastify.get("/api/collaboration", { websocket: true }, (socket, request) => {
-    // Pass the socket and the raw internal Node request to Hocuspocus
-    hocuspocusServer.handleConnection(socket, request.raw);
-  });
+  // 🟢 Add 'as any' to the options, and type the parameters
+  fastify.get(
+    "/api/collaboration",
+    { websocket: true } as any,
+    (socket: any, request: FastifyRequest) => {
+      // Pass the socket and the raw internal Node request to Hocuspocus
+      hocuspocusServer.handleConnection(socket, request.raw);
+    },
+  );
 
   await fastify.register(cors, {
     origin: true,
@@ -134,6 +146,17 @@ export async function buildServer() {
       "x-b3-sampled",
     ],
   });
+
+ await fastify.register(fastifyMetrics, {
+  endpoint: '/metrics',
+  defaultMetrics: { 
+    enabled: true,
+  },
+  routeMetrics: { 
+    enabled: true,
+  },
+});
+
 
   await fastify.register(helmet, {
     contentSecurityPolicy: false,

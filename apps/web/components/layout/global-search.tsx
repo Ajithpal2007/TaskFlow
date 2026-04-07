@@ -67,20 +67,25 @@ export function GlobalSearch() {
 
   return (
     <Dialog open={isSearchOpen} onOpenChange={setSearchOpen}>
-      {/* 🟢 THE BULLETPROOF FIX: 
-          1. sm:max-w-[600px] locks it to standard Spotlight size on desktop.
-          2. w-[95vw] ensures it fits cleanly on mobile phones. */}
-      <DialogContent className="overflow-hidden p-0 shadow-2xl sm:max-w-[600px] w-[95vw] border-border/50 rounded-xl">
+      {/* 🔴 THE NUCLEAR FIX: Bypassing Tailwind to force EXACTLY 600px width */}
+      <DialogContent 
+        className="overflow-hidden p-0 shadow-2xl border-border/50 rounded-xl"
+        style={{ maxWidth: "600px", width: "95vw" }}
+      >
         <Command shouldFilter={false} className="bg-background">
           <CommandInput
             placeholder="Search tasks, docs, and whiteboards..."
             value={inputValue}
             onValueChange={setInputValue}
-            className="h-12 text-[15px]" // slightly taller input for a premium feel
+            className="h-12 text-[15px]" 
           />
-          {/* 🟢 HEIGHT CAP: Prevent the list from touching the bottom of the screen */}
-          <CommandList className="max-h-[60vh] sm:max-h-[450px] overflow-y-auto">
-            <CommandEmpty className="py-6 text-sm">
+          
+          {/* 🔴 NUCLEAR FIX #2: Forcing the list height so it doesn't touch the floor */}
+          <CommandList 
+            className="overflow-y-auto"
+            style={{ maxHeight: "450px" }}
+          >
+            <CommandEmpty className="py-6 text-sm text-center">
               {inputValue.length < 2
                 ? "Type at least 2 characters to search..."
                 : isFetching
@@ -99,7 +104,6 @@ export function GlobalSearch() {
                     className="flex items-center py-2.5 cursor-pointer"
                   >
                     <CheckSquare className="mr-3 h-4 w-4 text-primary shrink-0" />
-                    {/* 🟢 Flex-1 and min-w-0 ensures the title wraps nicely if it's too long */}
                     <span className="truncate flex-1 min-w-0 mr-4 text-foreground">{task.title}</span>
                     <span className="shrink-0 text-[10px] uppercase font-semibold text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
                       {task.project.identifier}-{task.sequenceId}

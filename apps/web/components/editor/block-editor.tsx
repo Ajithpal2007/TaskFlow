@@ -429,7 +429,7 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
   };
 
   return (
-   <div className="-mx-[54px] mt-4 flex-1 overflow-y-auto pb-32 relative group/editor h-[calc(100vh-200px)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+   <div className="-mx-[54px] mt-4 pb-32 relative group/editor min-h-[300px]">
 
       <div className="absolute -top-12 right-[54px] z-10 opacity-0 group-hover/editor:opacity-100 transition-opacity">
         <ExportMenu
@@ -451,7 +451,7 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
         }}
       />
 
-     <div className="min-h-max w-full">
+    <div className="w-full">
         <BlockNoteView 
           editor={editor} 
           editable={!isLocked} 

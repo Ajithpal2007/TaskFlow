@@ -44,7 +44,7 @@ export default function DocumentPage({ params }: { params: { docId: string; work
   }
 
   return (
-    <div className="min-h-screen bg-background pb-36">
+    <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-background pb-36 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
 
       {/* 🟢 1. THE COVER IMAGE AREA */}
       {document?.coverImage && (

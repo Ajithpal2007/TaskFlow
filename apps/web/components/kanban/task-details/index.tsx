@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import { useSearchParams, useRouter, usePathname, useParams } from "next/navigation";
 
 // 🟢 2. Imported your workspace hook so we can fetch the users for the @mentions
-import { useWorkspaces } from "@/hooks/api/use-workspaces"; 
+import { useWorkspaces } from "@/hooks/api/use-workspaces";
 
 // Import your modular components
 import { TaskHeader } from "./task-header";
@@ -26,7 +26,7 @@ export function TaskDetailsDialog() {
   const searchParams = useSearchParams();
   const params = useParams(); // Gets { workspaceId: "..." } from the URL
 
-  
+
 
   const urlTaskId = searchParams.get("taskId");
   const resolvedTaskId = activeTaskId || urlTaskId;
@@ -75,51 +75,47 @@ export function TaskDetailsDialog() {
         Task not found or has been deleted.
       </div>
     );
-} else {
+  } else {
     dialogBody = (
-      // 🟢 THE ULTIMATE FIX: CSS Grid is much stricter than Flexbox. 
-      // 'minmax(0, 1fr)' mathematically forbids the left column from pushing the right column.
-      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_320px] w-full h-full overflow-hidden bg-background">
-        
-        {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        {/* Locked height, independent scrolling, hidden horizontal overflow */}
-        <div className="h-full overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
-          {/* We wrap the content in a min-h-max so it flows naturally inside the scrolling box */}
-          <div className="flex flex-col min-h-max">
-            <TaskHeader task={task} updateTask={updateTask} />
-            <TaskTitle task={task} updateTask={updateTask} />
-            
-            <div className="w-full overflow-hidden">
-              <TaskDescription
-                task={task}
-                updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
-              />
-            </div>
+      // 🟢 1. md:flex-nowrap physically prevents the right column from wrapping to the bottom!
+      <div className="flex flex-col md:flex-row md:flex-nowrap w-full h-full overflow-hidden bg-background">
 
-            <div className="p-6 md:p-8 pt-0 space-y-10 w-full overflow-hidden">
-              <TaskSubtasks
-                task={task}
-                createSubtask={createSubtask}
-                isCreatingSubtask={isCreatingSubtask}
-                updateSubtask={updateSubtask}
-                deleteSubtask={deleteSubtask}
-              />
-              <TaskActivity
-                task={task}
-                workspaceUsers={activeWorkspace?.members || []} 
-                addComment={addComment}
-                isAddingComment={isAddingComment}
-                linkIssue={linkIssue}
-                unlinkIssue={unlinkIssue}
-              />
-            </div>
+        {/* --- LEFT COLUMN: MAIN CONTENT --- */}
+        {/* 🟢 2. min-w-0 and flex-1 means it takes the remaining space but NEVER pushes the right column away */}
+        <div className="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <TaskHeader task={task} updateTask={updateTask} />
+          <TaskTitle task={task} updateTask={updateTask} />
+
+          <div className="w-full min-w-0 overflow-hidden">
+            <TaskDescription
+              task={task}
+              updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
+            />
+          </div>
+
+          <div className="p-6 md:p-8 pt-0 space-y-10 w-full min-w-0 overflow-hidden">
+            <TaskSubtasks
+              task={task}
+              createSubtask={createSubtask}
+              isCreatingSubtask={isCreatingSubtask}
+              updateSubtask={updateSubtask}
+              deleteSubtask={deleteSubtask}
+            />
+            <TaskActivity
+              task={task}
+              workspaceUsers={activeWorkspace?.members || []}
+              addComment={addComment}
+              isAddingComment={isAddingComment}
+              linkIssue={linkIssue}
+              unlinkIssue={unlinkIssue}
+            />
           </div>
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        {/* Locked height, independent scrolling */}
-        <div className="h-full overflow-y-auto border-t md:border-t-0 md:border-l bg-muted/10 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <div className="p-6 md:p-8 min-h-max">
+        {/* 🟢 3. shrink-0 guarantees this stays EXACTLY 280px wide on the right side */}
+        <div className="w-full md:w-[280px] shrink-0 h-full overflow-y-auto border-t md:border-t-0 md:border-l bg-muted/10 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="p-6">
             <TaskSidebar
               task={task}
               updateTask={updateTask}
@@ -135,8 +131,9 @@ export function TaskDetailsDialog() {
 
   return (
     <Dialog open={!!resolvedTaskId} onOpenChange={(open) => !open && handleClose()}>
-      {/* 🟢 Strictly enforced max-height (85vh) forces the inside elements to scroll instead of expanding */}
-      <DialogContent className="max-w-[95vw] md:max-w-5xl h-[85vh] max-h-[85vh] p-0 overflow-hidden flex flex-col">
+      {/* 🟢 4. max-w-4xl makes the modal "Medium" sized (not huge!) */}
+      {/* 🟢 5. gap-0 and border-0 stop Shadcn UI from injecting unwanted padding/grid rules */}
+      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] p-0 flex flex-col overflow-hidden gap-0 border-none outline-none">
         {dialogBody}
       </DialogContent>
     </Dialog>

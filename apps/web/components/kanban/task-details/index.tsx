@@ -85,12 +85,14 @@ export function TaskDetailsDialog() {
         <div className="flex-1 min-w-0 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           <TaskHeader task={task} updateTask={updateTask} />
           <TaskTitle task={task} updateTask={updateTask} />
-          <TaskDescription
-            task={task}
-            updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
-          />
+          <div className="w-full max-w-full overflow-x-auto">
+            <TaskDescription
+              task={task}
+              updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
+            />
+          </div>
 
-          <div className="p-6 md:p-8 pt-0 space-y-10">
+         <div className="w-full max-w-full overflow-x-hidden">
             <TaskSubtasks
               task={task}
               createSubtask={createSubtask}

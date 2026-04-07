@@ -69,43 +69,49 @@ export function TaskDetailsDialog() {
     );
   } else {
     dialogBody = (
-      // 🟢 1. STANDARD FLEX: No more grid. We use standard flex-row which Tailwind guarantees will compile.
-      <div className="flex flex-col md:flex-row w-full h-full bg-background overflow-hidden">
+      // 🔴 BYPASSING TAILWIND ENTIRELY: Forcing side-by-side layout with raw CSS
+      <div style={{ display: "flex", flexDirection: "row", width: "100%", height: "100%", overflow: "hidden", backgroundColor: "var(--background)" }}>
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        {/* 🟢 2. STANDARD PADDING: px-6 py-6 guarantees the header won't touch the ceiling. flex-1 takes the remaining space. */}
-        <div className="flex-1 h-full overflow-y-auto overflow-x-hidden px-6 py-6 md:px-8 md:py-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {/* 🔴 Forcing 32px padding so the header CANNOT stick to the top */}
+        <div style={{ flex: "1 1 0%", minWidth: 0, overflowY: "auto", overflowX: "hidden", padding: "32px" }}>
           
           <TaskHeader task={task} updateTask={updateTask} />
           <TaskTitle task={task} updateTask={updateTask} />
           
-          <TaskDescription
-            task={task}
-            updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
-          />
+          <div style={{ width: "100%", overflow: "hidden", marginTop: "16px" }}>
+            <TaskDescription
+              task={task}
+              updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
+            />
+          </div>
 
-          <div className="space-y-10 pt-8">
-            <TaskSubtasks
-              task={task}
-              createSubtask={createSubtask}
-              isCreatingSubtask={isCreatingSubtask}
-              updateSubtask={updateSubtask}
-              deleteSubtask={deleteSubtask}
-            />
-            <TaskActivity
-              task={task}
-              workspaceUsers={activeWorkspace?.members || []} 
-              addComment={addComment}
-              isAddingComment={isAddingComment}
-              linkIssue={linkIssue}
-              unlinkIssue={unlinkIssue}
-            />
+          <div style={{ marginTop: "40px", display: "flex", flexDirection: "column", gap: "40px" }}>
+            <div style={{ width: "100%", overflow: "hidden" }}>
+              <TaskSubtasks
+                task={task}
+                createSubtask={createSubtask}
+                isCreatingSubtask={isCreatingSubtask}
+                updateSubtask={updateSubtask}
+                deleteSubtask={deleteSubtask}
+              />
+            </div>
+            <div style={{ width: "100%", overflow: "hidden" }}>
+              <TaskActivity
+                task={task}
+                workspaceUsers={activeWorkspace?.members || []} 
+                addComment={addComment}
+                isAddingComment={isAddingComment}
+                linkIssue={linkIssue}
+                unlinkIssue={unlinkIssue}
+              />
+            </div>
           </div>
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        {/* 🟢 3. STANDARD WIDTH: 'md:w-80' is exactly 320px. It is built into Tailwind, so it cannot be ignored! */}
-        <div className="w-full md:w-80 shrink-0 h-full overflow-y-auto bg-muted/10 border-t md:border-t-0 md:border-l px-6 py-6 md:px-8 md:py-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {/* 🔴 Forcing EXACTLY 320px width. It mathematically cannot wrap to the bottom. */}
+        <div style={{ width: "320px", flexShrink: 0, overflowY: "auto", padding: "32px", borderLeft: "1px solid rgba(150,150,150,0.2)", backgroundColor: "rgba(150,150,150,0.05)" }}>
           <TaskSidebar
             task={task}
             updateTask={updateTask}
@@ -120,7 +126,11 @@ export function TaskDetailsDialog() {
 
   return (
     <Dialog open={!!resolvedTaskId} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="max-w-5xl w-[95vw] h-[85vh] p-0 flex flex-col overflow-hidden gap-0 border-none outline-none">
+      {/* 🔴 Bypassing Tailwind to force a perfect 1000px medium-sized modal */}
+      <DialogContent 
+        style={{ maxWidth: "1000px", width: "95vw", height: "85vh", padding: 0, overflow: "hidden" }}
+        className="border-none outline-none"
+      >
         {dialogBody}
       </DialogContent>
     </Dialog>

@@ -429,7 +429,7 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
   };
 
   return (
-    <div className="-mx-[54px] mt-4 min-h-[calc(100vh-300px)] relative group/editor">
+   <div className="-mx-[54px] mt-4 flex-1 overflow-y-auto pb-32 relative group/editor h-[calc(100vh-200px)] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
 
       <div className="absolute -top-12 right-[54px] z-10 opacity-0 group-hover/editor:opacity-100 transition-opacity">
         <ExportMenu
@@ -451,15 +451,20 @@ function InnerEditor({ documentId, workspaceId, projectId, yDoc, provider, isLoc
         }}
       />
 
-      <BlockNoteView editor={editor} editable={!isLocked} theme={resolvedTheme === "dark" ? darkDefaultTheme : lightDefaultTheme} >
-        <SuggestionMenuController
-          triggerCharacter={"@"}
-          getItems={async (query) => getMentionMenuItems(query)}
-          suggestionMenuComponent={CustomTaskMenu}
-          onItemClick={(item) => item.onItemClick()}
-
-        />
-      </BlockNoteView>
+     <div className="min-h-max w-full">
+        <BlockNoteView 
+          editor={editor} 
+          editable={!isLocked} 
+          theme={resolvedTheme === "dark" ? darkDefaultTheme : lightDefaultTheme} 
+        >
+          <SuggestionMenuController
+            triggerCharacter={"@"}
+            getItems={async (query) => getMentionMenuItems(query)}
+            suggestionMenuComponent={CustomTaskMenu}
+            onItemClick={(item) => item.onItemClick()}
+          />
+        </BlockNoteView>
+      </div>
     </div>
   );
 }

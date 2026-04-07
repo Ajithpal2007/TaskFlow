@@ -26,17 +26,16 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
   return (
     <div className="flex flex-col h-[calc(100vh-3.5rem)] overflow-y-auto bg-muted/10">
 
-      {/* HEADER WITH QUICK ACTIONS */}
-      {/* 🟢 TIGHTER HEADER: Reduced py-8 to py-6 and tightened the title sizing */}
-      <div className="shrink-0 px-6 md:px-8 py-6 bg-background border-b flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-        <div>
+      {/* 🟢 BULLETPROOF HEADER: Strictly flex-row, space-between, and items-center */}
+      <div className="shrink-0 px-8 py-6 bg-background border-b flex flex-row justify-between items-center w-full">
+        <div className="flex flex-col text-left">
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Welcome back to <span className="font-semibold text-foreground">{workspace?.name || "your workspace"}</span>.
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-row items-center gap-3 shrink-0">
           <Button variant="outline" size="sm" className="gap-2 h-8 text-xs">
             <FileText className="h-3.5 w-3.5" /> New Doc
           </Button>
@@ -46,13 +45,12 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
         </div>
       </div>
 
-      {/* 🟢 REDUCED SPACING: Changed space-y-8 to space-y-6 to compress the vertical layout */}
-      <div className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+      <div className="flex-1 p-8 max-w-7xl mx-auto w-full space-y-6">
 
         {/* --- 1. KPI CARDS --- */}
-        {/* 🟢 TIGHTER GRID: Added gap-4 for nice, compact data cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="shadow-sm">
+        {/* 🟢 BULLETPROOF CARDS: flex-row and flex-1 forces 4 equal-sized small cards! */}
+        <div className="flex flex-row gap-4 w-full">
+          <Card className="flex-1 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Projects</CardTitle>
               <Target className="h-4 w-4 text-primary opacity-70" />
@@ -61,46 +59,47 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
               <div className="text-2xl font-bold">{analytics?.kpis?.activeProjects || 0}</div>
             </CardContent>
           </Card>
-           <Card className="shadow-sm">
+          
+          <Card className="flex-1 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">In Progress</CardTitle>
               <CircleDashed className="h-4 w-4 text-blue-500 opacity-70" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics?.kpis.tasksInProgress || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">+3 since yesterday</p>
+              <p className="text-[10px] text-muted-foreground mt-1">+3 since yesterday</p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
+          <Card className="flex-1 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Resolved</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-500 opacity-70" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics?.kpis.issuesResolved || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Last 30 days</p>
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
+          <Card className="flex-1 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completion</CardTitle>
               <Target className="h-4 w-4 text-purple-500 opacity-70" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{analytics?.kpis.completionRate || 0}%</div>
-              <p className="text-xs text-muted-foreground mt-1">+2% from last week</p>
+              <p className="text-[10px] text-muted-foreground mt-1">+2% from last week</p>
             </CardContent>
           </Card>
         </div>
 
         {/* --- 2. THE "JUMP BACK IN" ROW --- */}
-        {/* 🟢 TIGHTER GAP: Reduced gap-8 to gap-6 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 🟢 BULLETPROOF ROW: flex-row ensures they sit 50/50 side-by-side */}
+        <div className="flex flex-row gap-6 w-full">
 
           {/* Left Side: My Priority Tasks */}
-          <Card className="flex flex-col h-full shadow-sm">
+          <Card className="flex-1 flex flex-col shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-base">My Priority Tasks</CardTitle>
               <CardDescription className="text-xs">Tasks actively in progress.</CardDescription>
@@ -117,7 +116,6 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
                   <p className="text-sm">You have no pending priority tasks!</p>
                 </div>
               ) : (
-                // 🟢 TIGHTER LIST: Changed space-y-3 to space-y-2
                 <div className="space-y-2">
                   {myTasks?.map((task: any) => (
                     <Link 
@@ -125,7 +123,6 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
                       key={task.id}
                       className="block"
                     >
-                      {/* 🟢 SLIMMER ITEMS: Changed p-3 to py-2 px-3 for sleeker rows */}
                       <div className="flex items-center justify-between py-2 px-3 border rounded-md hover:bg-muted/50 transition-colors cursor-pointer group">
                         <div className="flex items-center gap-3 overflow-hidden">
                           <CircleDashed className="h-3.5 w-3.5 text-blue-500 shrink-0" />
@@ -150,7 +147,7 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
           </Card>
 
           {/* Right Side: Recent Documents */}
-          <Card className="flex flex-col h-full shadow-sm">
+          <Card className="flex-1 flex flex-col shadow-sm">
             <CardHeader className="pb-4">
               <CardTitle className="text-base">Recent Documents</CardTitle>
               <CardDescription className="text-xs">Pick up where you left off.</CardDescription>
@@ -192,12 +189,10 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
         </div>
 
         {/* --- 3. CHARTS GRID --- */}
-        {/* 🟢 THE FIX: You had col-span-2 on the charts, but they weren't wrapped in a grid! 
-            This div wrapper stops the bar chart from stretching across your entire monitor. */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 🟢 BULLETPROOF CHARTS: Bar Chart gets 2 parts width, Donut Chart gets 1 part width */}
+        <div className="flex flex-row gap-6 w-full">
           
-          {/* Bar Chart: Sprint Velocity (Takes up 2/3 of the row) */}
-          <Card className="col-span-1 lg:col-span-2 shadow-sm">
+          <Card className="flex-[2] shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Sprint Velocity</CardTitle>
               <CardDescription className="text-xs">Tasks added vs. completed.</CardDescription>
@@ -213,8 +208,7 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
             </CardContent>
           </Card>
 
-          {/* Donut Chart: Issue Breakdown (Takes up 1/3 of the row) */}
-          <Card className="col-span-1 shadow-sm">
+          <Card className="flex-1 shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Issue Breakdown</CardTitle>
               <CardDescription className="text-xs">Active work distribution.</CardDescription>
@@ -235,6 +229,7 @@ export default function WorkspaceDashboard({ params }: { params: { workspaceId: 
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
         </div>
 
       </div>

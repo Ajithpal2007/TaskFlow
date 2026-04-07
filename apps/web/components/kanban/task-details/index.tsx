@@ -69,42 +69,55 @@ export function TaskDetailsDialog() {
     );
   } else {
     dialogBody = (
-      // 🟢 The Ironclad Layout: flex-nowrap ensures it never drops to the bottom!
-      <div className="flex flex-col md:flex-row md:flex-nowrap w-full h-full overflow-hidden bg-background">
+      // 🟢 The Wrapper: 100% width, absolutely no horizontal overflow allowed.
+      <div className="w-full h-full flex flex-col md:flex-row overflow-hidden bg-background">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        <div className="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <TaskHeader task={task} updateTask={updateTask} />
-          <TaskTitle task={task} updateTask={updateTask} />
+        {/* 🟢 THE NUCLEAR FIX: 'md:w-[calc(100%-280px)]' 
+            This mathematically forces the left side to leave exactly 280px for the sidebar. 
+            It CANNOT push the sidebar away anymore. */}
+        <div className="w-full md:w-[calc(100%-280px)] shrink h-full overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           
-          <div className="w-full min-w-0 overflow-hidden">
+          <div className="w-full overflow-hidden">
+            <TaskHeader task={task} updateTask={updateTask} />
+          </div>
+          <div className="w-full overflow-hidden">
+            <TaskTitle task={task} updateTask={updateTask} />
+          </div>
+          <div className="w-full overflow-hidden">
             <TaskDescription
               task={task}
               updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
             />
           </div>
 
-          <div className="p-6 md:p-8 pt-0 space-y-10 w-full min-w-0 overflow-hidden">
-            <TaskSubtasks
-              task={task}
-              createSubtask={createSubtask}
-              isCreatingSubtask={isCreatingSubtask}
-              updateSubtask={updateSubtask}
-              deleteSubtask={deleteSubtask}
-            />
-            <TaskActivity
-              task={task}
-              workspaceUsers={activeWorkspace?.members || []} 
-              addComment={addComment}
-              isAddingComment={isAddingComment}
-              linkIssue={linkIssue}
-              unlinkIssue={unlinkIssue}
-            />
+          <div className="p-6 md:p-8 pt-0 space-y-10 w-full overflow-hidden">
+            {/* 🛑 I strongly suspect TaskSubtasks is the culprit! */}
+            <div className="w-full overflow-hidden">
+              <TaskSubtasks
+                task={task}
+                createSubtask={createSubtask}
+                isCreatingSubtask={isCreatingSubtask}
+                updateSubtask={updateSubtask}
+                deleteSubtask={deleteSubtask}
+              />
+            </div>
+            
+            <div className="w-full overflow-hidden">
+              <TaskActivity
+                task={task}
+                workspaceUsers={activeWorkspace?.members || []} 
+                addComment={addComment}
+                isAddingComment={isAddingComment}
+                linkIssue={linkIssue}
+                unlinkIssue={unlinkIssue}
+              />
+            </div>
           </div>
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        {/* 🟢 shrink-0 ensures the sidebar stays firmly on the right side */}
+        {/* 🟢 Strictly locked to 280px */}
         <div className="w-full md:w-[280px] shrink-0 h-full overflow-y-auto border-t md:border-t-0 md:border-l bg-muted/10 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           <div className="p-6">
             <TaskSidebar

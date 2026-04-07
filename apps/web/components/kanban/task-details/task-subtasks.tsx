@@ -125,24 +125,25 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   };
 
   return (
-    <div className="space-y-4">
+    // 🟢 1. Caged the outermost wrapper
+    <div className="space-y-4 min-w-0 w-full overflow-hidden">
 
       {/* HEADER & PROGRESS BAR */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-semibold text-lg">
+      {/* 🟢 2. Added 'flex-wrap' and 'gap-y-2' so the AI buttons wrap instead of pushing the sidebar! */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 min-w-0 w-full">
+        <div className="flex items-center gap-2 font-semibold text-lg shrink-0">
           <ListTodo className="h-5 w-5 text-muted-foreground" />
           Subtasks
         </div>
 
-        {/* 🟢 Action Buttons */}
-        <div className="flex items-center gap-2 text-xs font-medium">
+        <div className="flex items-center gap-2 text-xs font-medium shrink-0">
           {subtasks.length > 0 && <span className="text-muted-foreground mr-2">{completedCount} / {subtasks.length}</span>}
 
           {/* ✨ New AI Button ✨ */}
           <Button
             variant="outline"
             size="sm"
-            className="h-7 px-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 transition-all"
+            className="h-7 px-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800 transition-all shrink-0"
             onClick={handleGenerateAI}
             disabled={isGeneratingAI}
           >
@@ -150,7 +151,7 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
             {isGeneratingAI ? "Thinking..." : "Auto-Generate"}
           </Button>
 
-          <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setIsAdding(true)}>
+          <Button variant="ghost" size="sm" className="h-7 px-2 shrink-0" onClick={() => setIsAdding(true)}>
             <Plus className="h-3.5 w-3.5 mr-1" /> Add
           </Button>
         </div>
@@ -161,11 +162,12 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
       )}
 
       {/* THE SUBTASK LIST */}
-      <div className="space-y-1 pt-2">
+      {/* 🟢 3. Added 'min-w-0 w-full' to prevent the list from expanding outward */}
+      <div className="space-y-1 pt-2 min-w-0 w-full">
         {subtasks.length === 0 && !isAdding && (
           <div
             onClick={() => setIsAdding(true)}
-            className="flex flex-col items-center justify-center py-6 border-2 border-dashed rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground cursor-pointer transition-colors"
+            className="flex flex-col items-center justify-center py-6 border-2 border-dashed rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground cursor-pointer transition-colors w-full min-w-0"
           >
             <Plus className="h-6 w-6 mb-2 text-muted-foreground/50" />
             <p className="text-sm font-medium">Add a subtask</p>
@@ -175,14 +177,13 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
         {displaySubtasks.map((subtask: any) => (
           <div
             key={subtask.id}
-            // 🟢 Add a simple Tailwind fade-in animation here if you want it to look extra smooth!
-            className="animate-in fade-in slide-in-from-top-2 duration-500 group flex items-center gap-3 p-2 -mx-2 rounded-md hover:bg-muted/50 transition-all"
+            className="animate-in fade-in slide-in-from-top-2 duration-500 group flex items-center gap-3 p-2 -mx-2 rounded-md hover:bg-muted/50 transition-all min-w-0"
           >
             {/* The Checkbox */}
             <Checkbox
               checked={subtask.status === "DONE"}
               onCheckedChange={(checked) => updateSubtask({ id: subtask.id, status: checked ? "DONE" : "TODO" })}
-              className="h-4 w-4 rounded-[4px] data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+              className="h-4 w-4 rounded-[4px] data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600 shrink-0"
             />
 
             {/* The Title (Either Text or Input) */}
@@ -197,7 +198,8 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
                     if (e.key === "Enter") handleSaveEdit(subtask.id);
                     if (e.key === "Escape") setEditingId(null);
                   }}
-                  className="h-7 px-2 text-sm"
+                  // 🟢 4. Added min-w-0 to the edit input!
+                  className="h-7 px-2 text-sm w-full min-w-0"
                 />
               ) : (
                 <span
@@ -223,8 +225,8 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
         {/* INLINE CREATION ROW */}
         {isAdding && (
-          <div className="flex items-center gap-3 p-2 -mx-2 rounded-md bg-muted/30">
-            <Checkbox disabled className="h-4 w-4 rounded-[4px] opacity-50" />
+          <div className="flex items-center gap-3 p-2 -mx-2 rounded-md bg-muted/30 min-w-0">
+            <Checkbox disabled className="h-4 w-4 rounded-[4px] opacity-50 shrink-0" />
             <Input
               ref={addInputRef}
               value={newTitle}
@@ -238,7 +240,8 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
                   setNewTitle("");
                 }
               }}
-              className="h-7 px-2 text-sm flex-1"
+              // 🟢 5. Added min-w-0 to the creation input! This was the biggest culprit!
+              className="h-7 px-2 text-sm flex-1 min-w-0"
               disabled={isCreatingSubtask}
             />
           </div>

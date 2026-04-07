@@ -75,15 +75,14 @@ export function TaskDetailsDialog() {
         Task not found or has been deleted.
       </div>
     );
- } else {
+} else {
     dialogBody = (
-      // 🟢 THE NUCLEAR FIX: 'absolute inset-0' forces this container to perfectly 
-      // map to the parent Dialog's size, ignoring all UI library quirks.
-      <div className="absolute inset-0 flex flex-col md:flex-row bg-background">
+      // 1. The Master Wrapper: Forces exactly 100% height and width of the modal, no taller, no wider.
+      <div className="flex w-full h-full flex-col md:flex-row overflow-hidden bg-background">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        {/* We just need 'flex-1' and 'overflow-y-auto'. No complicated min-h-0 math needed anymore! */}
-        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {/* 2. min-w-0: THIS IS THE MAGIC KEY. It forces the left side to wrap long text instead of pushing the sidebar away. */}
+        <div className="flex-1 min-w-0 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           <TaskHeader task={task} updateTask={updateTask} />
           <TaskTitle task={task} updateTask={updateTask} />
           <TaskDescription
@@ -111,8 +110,8 @@ export function TaskDetailsDialog() {
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        {/* Fixed 300px width on desktop, full width on mobile */}
-        <div className="w-full md:w-[300px] lg:w-[320px] bg-muted/10 border-t md:border-t-0 md:border-l overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {/* 3. shrink-0: This tells the browser "NEVER squish this sidebar, and NEVER wrap it to the bottom on desktop." */}
+        <div className="w-full md:w-[320px] shrink-0 border-t md:border-t-0 md:border-l bg-muted/10 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           <div className="p-6 md:p-8">
             <TaskSidebar
               task={task}
@@ -122,15 +121,15 @@ export function TaskDetailsDialog() {
             />
           </div>
         </div>
+
       </div>
     );
   }
 
   return (
     <Dialog open={!!resolvedTaskId} onOpenChange={(open) => !open && handleClose()}>
-      {/* 🟢 SIMPLIFIED DIALOG: We removed the flex logic here. 
-          We just set the size to 85vh and make it 'relative'. */}
-      <DialogContent className="max-w-[95vw] md:max-w-[900px] lg:max-w-[1100px] h-[85vh] p-0 overflow-hidden relative">
+      {/* 4. The Modal Frame: Fixed width, fixed height (85vh), no internal layout rules fighting us. */}
+      <DialogContent className="w-[95vw] max-w-5xl h-[85vh] p-0 overflow-hidden">
         {dialogBody}
       </DialogContent>
     </Dialog>

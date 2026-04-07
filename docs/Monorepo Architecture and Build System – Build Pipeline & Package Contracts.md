@@ -10,73 +10,61 @@ The practical result is a dependency-aware monorepo flow: shared packages such a
 
 ```mermaid
 flowchart TB
-    Dev[Developer]
-
-    subgraph Orchestration[Workspace Orchestration]
-        Pnpm[pnpm workspace commands]
-        Turbo[Turborepo task graph]
+    Dev["Developer"]
+    subgraph Orchestration["Workspace Orchestration"]
+        Pnpm["pnpm workspace commands"]
+        Turbo["Turborepo task graph"]
     end
-
-    subgraph ApiApp[API Package]
-        ApiDev[apps api dev script]
-        ApiBuild[apps api build script]
-        ApiStart[apps api start script]
-        ApiLint[apps api lint script]
-        ApiTest[apps api test script]
-        Tsup[tsup bundle]
-        Fastify[Fastify server]
-        NodeApi[Node runtime]
+    subgraph ApiApp["API Package"]
+        ApiDev["apps/api dev"]
+        ApiBuild["apps/api build"]
+        ApiStart["apps/api start"]
+        ApiLint["apps/api lint"]
+        ApiTest["apps/api test"]
+        Tsup["tsup bundle"]
+        Fastify["Fastify server"]
+        NodeApi["Node runtime"]
     end
-
-    subgraph WebApp[Web Package]
-        WebDev[apps web dev script]
-        WebBuild[apps web build script]
-        WebStart[apps web start script]
-        WebLint[apps web lint script]
-        WebTypes[apps web check types script]
-        Playwright[Playwright e2e]
-        NextBuild[Next.js build]
-        Browser[Browser runtime]
+    subgraph WebApp["Web Package"]
+        WebDev["apps/web dev"]
+        WebBuild["apps/web build"]
+        WebStart["apps/web start"]
+        WebLint["apps/web lint"]
+        WebTypes["apps/web check-types"]
+        Playwright["Playwright e2e"]
+        NextBuild["Next.js build"]
+        Browser["Browser runtime"]
     end
-
-    subgraph SharedPackages[Shared Workspace Packages]
-        DbPkg[@repo/database]
-        ValidatorsPkg[@repo/validators]
-        UiPkg[@repo/ui]
-        AuthPkg[auth]
+    subgraph SharedPackages["Shared Workspace Packages"]
+        DbPkg["@repo/database"]
+        ValidatorsPkg["@repo/validators"]
+        UiPkg["@repo/ui"]
+        AuthPkg["auth"]
     end
-
-    subgraph PrismaBoundary[Prisma Client Boundary]
-        Schema[packages database prisma schema]
-        Client[Generated Prisma client]
+    subgraph PrismaBoundary["Prisma Client Boundary"]
+        Schema["prisma/schema.prisma"]
+        Client["Generated Prisma Client"]
     end
-
     Dev --> Pnpm
     Pnpm --> Turbo
-
     Turbo --> ApiDev
     Turbo --> ApiBuild
     Turbo --> ApiLint
     Turbo --> ApiTest
-
     Turbo --> WebDev
     Turbo --> WebBuild
     Turbo --> WebLint
     Turbo --> WebTypes
     Turbo --> Playwright
-
     ApiBuild --> Tsup
     Tsup --> NodeApi
     NodeApi --> Fastify
-
     ApiTest --> Client
     WebBuild --> NextBuild
     WebStart --> Browser
     Playwright --> Browser
-
     DbPkg --> Client
     Schema --> Client
-
     ApiDev --> DbPkg
     ApiBuild --> DbPkg
     ApiTest --> DbPkg
@@ -85,7 +73,6 @@ flowchart TB
     WebBuild --> UiPkg
     WebBuild --> AuthPkg
 ```
-
 ## Build Pipeline
 
 The workspace is structured around package-local scripts that the root orchestration layer can execute in dependency order. The visible app scripts define the actual commands for building, starting, linting, and validating the codebase.

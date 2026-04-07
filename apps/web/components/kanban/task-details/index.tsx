@@ -69,13 +69,12 @@ export function TaskDetailsDialog() {
     );
   } else {
     dialogBody = (
-      // 🟢 1. CSS GRID: This mathematically forces exactly 2 columns. 
-      // It will NEVER drop the sidebar to the bottom on a desktop screen.
-      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_300px] w-full h-full overflow-hidden bg-background">
+      // 🟢 1. STANDARD FLEX: No more grid. We use standard flex-row which Tailwind guarantees will compile.
+      <div className="flex flex-col md:flex-row w-full h-full bg-background overflow-hidden">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        {/* 🟢 2. Removed the tight overflow-hidden wrappers so your dropdowns work again! */}
-        <div className="h-full overflow-y-auto overflow-x-hidden p-6 md:p-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full flex flex-col gap-6">
+        {/* 🟢 2. STANDARD PADDING: px-6 py-6 guarantees the header won't touch the ceiling. flex-1 takes the remaining space. */}
+        <div className="flex-1 h-full overflow-y-auto overflow-x-hidden px-6 py-6 md:px-8 md:py-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           
           <TaskHeader task={task} updateTask={updateTask} />
           <TaskTitle task={task} updateTask={updateTask} />
@@ -85,7 +84,7 @@ export function TaskDetailsDialog() {
             updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
           />
 
-          <div className="space-y-10 pt-4">
+          <div className="space-y-10 pt-8">
             <TaskSubtasks
               task={task}
               createSubtask={createSubtask}
@@ -105,8 +104,8 @@ export function TaskDetailsDialog() {
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        {/* 🟢 3. Flattened the nesting so the sidebar stretches beautifully */}
-        <div className="h-full overflow-y-auto bg-muted/10 border-t md:border-t-0 md:border-l p-6 md:p-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {/* 🟢 3. STANDARD WIDTH: 'md:w-80' is exactly 320px. It is built into Tailwind, so it cannot be ignored! */}
+        <div className="w-full md:w-80 shrink-0 h-full overflow-y-auto bg-muted/10 border-t md:border-t-0 md:border-l px-6 py-6 md:px-8 md:py-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           <TaskSidebar
             task={task}
             updateTask={updateTask}
@@ -121,8 +120,7 @@ export function TaskDetailsDialog() {
 
   return (
     <Dialog open={!!resolvedTaskId} onOpenChange={(open) => !open && handleClose()}>
-      {/* 🟢 4. max-w-5xl gives the perfect medium/large size so the 300px sidebar fits cleanly. */}
-      <DialogContent className="w-[95vw] max-w-5xl h-[85vh] p-0 flex flex-col overflow-hidden gap-0 border-none outline-none">
+      <DialogContent className="max-w-5xl w-[95vw] h-[85vh] p-0 flex flex-col overflow-hidden gap-0 border-none outline-none">
         {dialogBody}
       </DialogContent>
     </Dialog>

@@ -69,64 +69,50 @@ export function TaskDetailsDialog() {
     );
   } else {
     dialogBody = (
-      // 🟢 The Wrapper: 100% width, absolutely no horizontal overflow allowed.
-      <div className="w-full h-full flex flex-col md:flex-row overflow-hidden bg-background">
+      // 🟢 1. CSS GRID: This mathematically forces exactly 2 columns. 
+      // It will NEVER drop the sidebar to the bottom on a desktop screen.
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_300px] w-full h-full overflow-hidden bg-background">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        {/* 🟢 THE NUCLEAR FIX: 'md:w-[calc(100%-280px)]' 
-            This mathematically forces the left side to leave exactly 280px for the sidebar. 
-            It CANNOT push the sidebar away anymore. */}
-        <div className="w-full md:w-[calc(100%-280px)] shrink h-full overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {/* 🟢 2. Removed the tight overflow-hidden wrappers so your dropdowns work again! */}
+        <div className="h-full overflow-y-auto overflow-x-hidden p-6 md:p-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full flex flex-col gap-6">
           
-          <div className="w-full overflow-hidden">
-            <TaskHeader task={task} updateTask={updateTask} />
-          </div>
-          <div className="w-full overflow-hidden">
-            <TaskTitle task={task} updateTask={updateTask} />
-          </div>
-          <div className="w-full overflow-hidden">
-            <TaskDescription
-              task={task}
-              updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
-            />
-          </div>
+          <TaskHeader task={task} updateTask={updateTask} />
+          <TaskTitle task={task} updateTask={updateTask} />
+          
+          <TaskDescription
+            task={task}
+            updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
+          />
 
-          <div className="p-6 md:p-8 pt-0 space-y-10 w-full overflow-hidden">
-            {/* 🛑 I strongly suspect TaskSubtasks is the culprit! */}
-            <div className="w-full overflow-hidden">
-              <TaskSubtasks
-                task={task}
-                createSubtask={createSubtask}
-                isCreatingSubtask={isCreatingSubtask}
-                updateSubtask={updateSubtask}
-                deleteSubtask={deleteSubtask}
-              />
-            </div>
-            
-            <div className="w-full overflow-hidden">
-              <TaskActivity
-                task={task}
-                workspaceUsers={activeWorkspace?.members || []} 
-                addComment={addComment}
-                isAddingComment={isAddingComment}
-                linkIssue={linkIssue}
-                unlinkIssue={unlinkIssue}
-              />
-            </div>
+          <div className="space-y-10 pt-4">
+            <TaskSubtasks
+              task={task}
+              createSubtask={createSubtask}
+              isCreatingSubtask={isCreatingSubtask}
+              updateSubtask={updateSubtask}
+              deleteSubtask={deleteSubtask}
+            />
+            <TaskActivity
+              task={task}
+              workspaceUsers={activeWorkspace?.members || []} 
+              addComment={addComment}
+              isAddingComment={isAddingComment}
+              linkIssue={linkIssue}
+              unlinkIssue={unlinkIssue}
+            />
           </div>
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        {/* 🟢 Strictly locked to 280px */}
-        <div className="w-full md:w-[280px] shrink-0 h-full overflow-y-auto border-t md:border-t-0 md:border-l bg-muted/10 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <div className="p-6">
-            <TaskSidebar
-              task={task}
-              updateTask={updateTask}
-              deleteTask={deleteTask}
-              isDeleting={isDeleting}
-            />
-          </div>
+        {/* 🟢 3. Flattened the nesting so the sidebar stretches beautifully */}
+        <div className="h-full overflow-y-auto bg-muted/10 border-t md:border-t-0 md:border-l p-6 md:p-8 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <TaskSidebar
+            task={task}
+            updateTask={updateTask}
+            deleteTask={deleteTask}
+            isDeleting={isDeleting}
+          />
         </div>
 
       </div>
@@ -135,8 +121,8 @@ export function TaskDetailsDialog() {
 
   return (
     <Dialog open={!!resolvedTaskId} onOpenChange={(open) => !open && handleClose()}>
-      {/* 🟢 max-w-4xl keeps it medium-sized, no more full-screen blowouts! */}
-      <DialogContent className="w-[95vw] max-w-4xl h-[85vh] p-0 flex flex-col overflow-hidden gap-0 border-none outline-none">
+      {/* 🟢 4. max-w-5xl gives the perfect medium/large size so the 300px sidebar fits cleanly. */}
+      <DialogContent className="w-[95vw] max-w-5xl h-[85vh] p-0 flex flex-col overflow-hidden gap-0 border-none outline-none">
         {dialogBody}
       </DialogContent>
     </Dialog>

@@ -3,20 +3,29 @@ import Redis from 'ioredis';
 
 const redisUrl = process.env.REDIS_URL;
 
-// 🟢 THE FIX: Loudly crash if the URL is missing, don't silently fallback to localhost!
+// 🟢 Loudly crash if the URL is missing
 if (!redisUrl) {
   throw new Error("❌ CRITICAL: REDIS_URL is missing from your environment variables!");
 }
 
-// 1. Connect to Upstash securely
-export const redisConnection = new Redis(process.env.REDIS_URL as string, {
-  maxRetriesPerRequest: null, // Required by BullMQ
-  tls: {
-    rejectUnauthorized: false // Required for Upstash Serverless Redis
-  }
+// 1. Connect to Aiven securely
+export const redisConnection = new Redis(redisUrl, {
+  maxRetriesPerRequest: null, // Still strictly required by BullMQ!
+  
+  // 🟢 THE AIVEN FIX: Turn on strict TLS. 
+  // We no longer need 'rejectUnauthorized: false' because Aiven has valid certs.
+  tls: {} 
 });
 
-// 2. Create the Queue
+redisConnection.on("connect", () => {
+  console.log("🟢 Connected to Aiven Redis successfully!");
+});
+
+redisConnection.on("error", (err) => {
+  console.error("🔴 Aiven Redis Error:", err);
+});
+
+// 2. Create the Queues (Zero changes needed here!)
 export const notificationQueue = new Queue('notifications', { connection: redisConnection });
 export const emailQueue = new Queue('emails', { connection: redisConnection });
 export const canvasQueue = new Queue('canvas', { connection: redisConnection });

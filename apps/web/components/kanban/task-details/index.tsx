@@ -78,9 +78,9 @@ export function TaskDetailsDialog() {
   } else {
     // This is the main grid when the task exists!
     dialogBody = (
-      <div className="flex-1 overflow-y-auto overflow-x-hidden grid grid-cols-1 md:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px] h-full">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden h-full">
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        <div className="flex flex-col overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           <TaskHeader task={task} updateTask={updateTask} />
           <TaskTitle task={task} updateTask={updateTask} />
           <TaskDescription
@@ -109,7 +109,7 @@ export function TaskDetailsDialog() {
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        <div className="bg-muted/10 border-l p-6 md:p-8 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        <div className="w-full md:w-[280px] lg:w-[320px] shrink-0 bg-muted/10 border-t md:border-t-0 md:border-l p-6 md:p-8 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           <TaskSidebar
             task={task}
             updateTask={updateTask}
@@ -123,7 +123,7 @@ export function TaskDetailsDialog() {
 
   return (
     <Dialog open={!!resolvedTaskId} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="w-[95vw] sm:max-w-[95vw] md:max-w-5xl flex flex-col h-[85vh] p-0 overflow-hidden gap-0">
+     <DialogContent className="w-[95vw] max-w-4xl lg:max-w-5xl flex flex-col h-[85vh] p-0 overflow-hidden gap-0">
         {/* 🟢 5. Drop the clean variable here instead of the messy nested ternaries */}
         {dialogBody}
       </DialogContent>

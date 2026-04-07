@@ -45,9 +45,9 @@ export function TaskTitle({ task, updateTask }: TaskTitleProps) {
     }
   };
 
-  return (
-    // 🟢 Added 'group flex items-start gap-2' to the wrapper
-    <div className="px-8 pt-2 pb-6 group flex items-start gap-2">
+ return (
+    // 🟢 1. Added 'min-w-0 w-full' to the parent container so it can shrink
+    <div className="px-6 md:px-8 pt-2 pb-6 group flex items-start gap-2 min-w-0 w-full">
       {isEditing ? (
         <Input
           ref={inputRef}
@@ -56,20 +56,19 @@ export function TaskTitle({ task, updateTask }: TaskTitleProps) {
           onChange={(e) => setTitleValue(e.target.value)}
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
-          // Added 'flex-1' so the input stretches to fill the space
-          className="flex-1 w-full text-2xl font-semibold leading-tight text-foreground bg-transparent border-2 border-primary rounded-md px-2 py-1 outline-none"
+          // 🟢 2. Added 'min-w-0' to the input so it doesn't push out
+          className="flex-1 min-w-0 w-full text-2xl font-semibold leading-tight text-foreground bg-transparent border-2 border-primary rounded-md px-2 py-1 outline-none"
         />
       ) : (
         <>
           <DialogTitle 
             onClick={() => setIsEditing(true)}
-            // Added 'flex-1' to push the pencil button to the right side of the title if needed
-            className="flex-1 text-2xl font-semibold leading-tight text-foreground hover:bg-muted/50 cursor-text rounded-md px-2 py-1 -ml-2 transition-colors border-2 border-transparent"
+            // 🟢 3. Added 'min-w-0' and 'break-words' to mathematically force long titles to wrap!
+            className="flex-1 min-w-0 break-words text-2xl font-semibold leading-tight text-foreground hover:bg-muted/50 cursor-text rounded-md px-2 py-1 -ml-2 transition-colors border-2 border-transparent"
           >
             {task.title}
           </DialogTitle>
           
-          {/* 🟢 The Hover-Reveal Pencil Button */}
           <Button 
             variant="ghost" 
             size="icon" 

@@ -118,23 +118,23 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
 
 
 
-  return (
-    <div className="flex flex-col gap-10">
-      <div className="space-y-4 pt-6 border-t">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 font-semibold text-lg text-foreground">
-            <Link2 className="h-5 w-5 text-muted-foreground" />
-            Linked Issues
+ return (
+    // 🟢 1. Caged the outermost container with 'min-w-0 w-full'
+    <div className="flex flex-col gap-10 min-w-0 w-full">
+      <div className="space-y-4 pt-6 border-t min-w-0 w-full">
+        <div className="flex items-center justify-between min-w-0">
+          <div className="flex items-center gap-2 font-semibold text-lg text-foreground truncate">
+            <Link2 className="h-5 w-5 text-muted-foreground shrink-0" />
+            <span className="truncate">Linked Issues</span>
           </div>
 
           <Popover open={isLinkPopoverOpen} onOpenChange={setIsLinkPopoverOpen} modal={true}>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 text-xs px-2">
+              <Button variant="ghost" size="sm" className="h-7 text-xs px-2 shrink-0 ml-4">
                 <Plus className="h-3.5 w-3.5 mr-1" /> Add Link
               </Button>
             </PopoverTrigger>
 
-            {/* 🟢 2. avoidCollisions={false} permanently stops the popover from jumping to the top! */}
             <PopoverContent className="w-[320px] p-0 z-50" align="start" side="bottom" sideOffset={4} avoidCollisions={false}>
               <div className="p-2 border-b bg-muted/30">
                 <Select value={linkType} onValueChange={(v: any) => setLinkType(v)}>
@@ -150,7 +150,6 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
                 </Select>
               </div>
 
-              {/* 🟢 3. shouldFilter is omitted so it defaults to true (Instant local filtering) */}
               <Command className="bg-transparent">
                 <CommandInput
                   placeholder="Search tasks by ID or title..."
@@ -159,7 +158,6 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
                   className="h-9 text-xs"
                 />
 
-                {/* 🟢 4. FIXED HEIGHT: 'h-56' stops the modal from resizing as results filter */}
                 <CommandList className="h-56 overflow-y-auto overflow-x-hidden">
                   <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
                     No tasks found.
@@ -171,7 +169,6 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
                       .map((t: any) => (
                         <CommandItem
                           key={t.id}
-                          // 🟢 5. cmdk searches this exact string instantly
                           value={`${t.project?.identifier}-${t.sequenceId} ${t.title}`}
                           onSelect={() => {
                             linkIssue({ targetTaskId: t.id, linkType, targetTaskData: t });
@@ -194,15 +191,17 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
             </PopoverContent>
           </Popover>
         </div>
-        <div className="ml-7 space-y-4">
+        
+        {/* 🟢 2. Prevent linked issues from overflowing */}
+        <div className="ml-7 space-y-4 min-w-0 pr-7 overflow-hidden">
 
           {/* --- 🔴 BLOCKS --- */}
           {task.blocking?.filter((d: any) => d.type === "BLOCKS").length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Blocks</span>
               {task.blocking.filter((d: any) => d.type === "BLOCKS").map((dep: any) => (
-                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer">
-                  <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-600 border-red-500/20">
+                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer min-w-0">
+                  <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-600 border-red-500/20 shrink-0">
                     {dep.blockedBy.project?.identifier}-{dep.blockedBy.sequenceId}
                   </Badge>
                   <span className={`text-sm flex-1 truncate ${dep.blockedBy?.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
@@ -219,11 +218,11 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
 
           {/* --- 🟡 IS BLOCKED BY --- */}
           {task.blockedBy?.filter((d: any) => d.type === "BLOCKS").length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Is Blocked By</span>
               {task.blockedBy.filter((d: any) => d.type === "BLOCKS").map((dep: any) => (
-                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer">
-                  <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer min-w-0">
+                  <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-600 border-yellow-500/20 shrink-0">
                     {dep.blocking.project?.identifier}-{dep.blocking.sequenceId}
                   </Badge>
                   <span className={`text-sm flex-1 truncate ${dep.blocking?.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
@@ -240,11 +239,11 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
 
           {/* --- 🔵 RELATES TO --- */}
           {task.blocking?.filter((d: any) => d.type === "RELATES_TO").length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Relates To</span>
               {task.blocking.filter((d: any) => d.type === "RELATES_TO").map((dep: any) => (
-                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer">
-                  <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/20">
+                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer min-w-0">
+                  <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/20 shrink-0">
                     {dep.blockedBy.project?.identifier}-{dep.blockedBy.sequenceId}
                   </Badge>
                   <span className={`text-sm flex-1 truncate ${dep.blockedBy?.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
@@ -261,11 +260,11 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
 
           {/* --- 🟣 DUPLICATES --- */}
           {task.blocking?.filter((d: any) => d.type === "DUPLICATES").length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Duplicates</span>
               {task.blocking.filter((d: any) => d.type === "DUPLICATES").map((dep: any) => (
-                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer">
-                  <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-600 border-purple-500/20">
+                <div key={dep.id} className="flex items-center gap-3 p-2 border rounded-md hover:bg-muted/50 transition-colors group cursor-pointer min-w-0">
+                  <Badge variant="outline" className="text-[10px] bg-purple-500/10 text-purple-600 border-purple-500/20 shrink-0">
                     {dep.blockedBy.project?.identifier}-{dep.blockedBy.sequenceId}
                   </Badge>
                   <span className={`text-sm flex-1 truncate ${dep.blockedBy?.status === "DONE" ? "line-through text-muted-foreground" : ""}`}>
@@ -282,28 +281,31 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
 
         </div>
       </div>
-      <TaskAttachments task={task} />
+      
+      <div className="w-full min-w-0 overflow-hidden">
+        <TaskAttachments task={task} />
+      </div>
 
       {/* --- COMMENTS SECTION --- */}
-      <div className="space-y-6 pt-6 border-t">
+      <div className="space-y-6 pt-6 border-t min-w-0 w-full overflow-hidden">
         <div className="flex items-center gap-2 font-semibold text-lg text-foreground">
-          <MessageSquare className="h-5 w-5 text-muted-foreground" />
+          <MessageSquare className="h-5 w-5 text-muted-foreground shrink-0" />
           Comments
         </div>
 
-        <div className="ml-7 flex gap-4">
+        {/* 🟢 3. Caged the MentionsInput to force it to obey screen limits */}
+        <div className="ml-7 flex gap-4 min-w-0 pr-7 overflow-hidden">
           <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <User className="h-4 w-4 text-primary" />
           </div>
-          <div className="flex-1 space-y-2">
-           <div className="flex-1 space-y-2 relative">
+          <div className="flex-1 space-y-2 min-w-0">
+           <div className="flex-1 space-y-2 relative min-w-0">
             <MentionsInput
-              className="task-mentions" // 🟢 Crucial for the CSS below
+              className="task-mentions"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Write a comment... Type @ to mention someone. (Cmd+Enter to save)"
-              // 🔴 NO style PROP AT ALL!
+              placeholder="Write a comment... Type @ to mention someone."
             >
               <Mention
                 trigger="@"
@@ -311,7 +313,6 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
                 displayTransform={(id, display) => `@${display}`}
                 renderSuggestion={(suggestion, search, highlightedDisplay, index, focused) => (
                   <div
-                    // 🟢 THE FIX: Explicit text and hover colors to guarantee visibility
                     className={`px-2 py-1.5 text-sm rounded-sm transition-colors cursor-pointer ${
                       focused
                         ? "bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white"
@@ -324,18 +325,13 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
               />
             </MentionsInput>
             
-           
-              
-            
-            {/* 🟢 THE FIX: relative and z-50 forces the button above the invisible text layer! */}
             <div className="flex justify-end relative z-50 pt-2">
               <Button
                 size="sm"
-                type="button" // 🟢 Prevents default form submission behaviors
+                type="button"
                 className="cursor-pointer"
                 onClick={(e) => {
                   e.preventDefault();
-                  console.log("🖱️ FRONTEND: Save Button Clicked!"); // 🟢 Let's prove the click registers!
                   handlePostComment();
                 }}
                 disabled={!newComment.trim() || isAddingComment}
@@ -347,28 +343,28 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
           </div>
         </div>
 
-        <div className="ml-7 space-y-6 mt-6">
+        <div className="ml-7 space-y-6 mt-6 min-w-0 pr-7">
           {!task.comments || task.comments.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">No comments yet.</p>
           ) : (
             task.comments?.map((comment: any) => (
-              <div key={comment.id} className="flex gap-4 group">
+              <div key={comment.id} className="flex gap-4 group min-w-0">
                 <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0 border">
                   <span className="text-xs font-bold uppercase">
                     {comment.author?.name?.charAt(0) || "U"}
                   </span>
                 </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground">
+                {/* 🟢 4. THE MAGIC KEY: Added 'break-words' and 'min-w-0' to the comment text box */}
+                <div className="flex-1 space-y-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-semibold text-foreground truncate">
                       {comment.author?.name || "Unknown User"}
                     </span>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-muted-foreground shrink-0">
                       {comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }) : "Unknown time"}
                     </div>
                   </div>
-                  <div className="text-sm text-foreground bg-muted/30 p-3 rounded-lg border border-transparent group-hover:border-border transition-colors whitespace-pre-wrap">
-                    {/* 🟢 Added whitespace-pre-wrap so line breaks in comments render correctly */}
+                  <div className="text-sm text-foreground bg-muted/30 p-3 rounded-lg border border-transparent group-hover:border-border transition-colors whitespace-pre-wrap break-words min-w-0 w-full">
                     {renderCommentText(comment.content)}
                   </div>
                 </div>
@@ -379,9 +375,9 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
       </div>
 
       {/* --- ACTIVITY LOG SECTION --- */}
-      <div className="space-y-4 pt-6 border-t">
+      <div className="space-y-4 pt-6 border-t min-w-0 w-full overflow-hidden">
         <div className="flex items-center gap-2 font-semibold text-lg text-foreground">
-          <History className="h-5 w-5 text-muted-foreground" />
+          <History className="h-5 w-5 text-muted-foreground shrink-0" />
           History
         </div>
 
@@ -390,10 +386,9 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
         ) : activityLogs.length === 0 ? (
           <div className="text-xs text-muted-foreground italic ml-7">No activity recorded yet.</div>
         ) : (
-          <div className="space-y-6 ml-10 border-l-2 border-muted pl-6 relative">
-            {/* 🟢 Improved Timeline CSS to prevent text wrapping issues */}
+          <div className="space-y-6 ml-10 border-l-2 border-muted pl-6 relative min-w-0 pr-10">
             {activityLogs.map((log: any) => (
-              <div key={log.id} className="relative">
+              <div key={log.id} className="relative min-w-0">
                 <div className="absolute -left-[37px] top-0 h-6 w-6 rounded-full bg-background border-2 border-muted flex items-center justify-center overflow-hidden">
                   {log.actor?.image ? (
                     <img src={log.actor.image} alt={log.actor.name} className="h-full w-full object-cover" />
@@ -402,9 +397,9 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
                   )}
                 </div>
 
-                <div className="flex flex-col gap-0.5">
-                  <div className="text-sm">
-                    <span className="font-medium text-foreground">{log.actor?.name} </span>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <div className="text-sm min-w-0">
+                    <span className="font-medium text-foreground truncate block md:inline">{log.actor?.name} </span>
                     <span className="text-muted-foreground">
                       {log.action === "STATUS_CHANGED" && "updated the status"}
                       {log.action === "PRIORITY_CHANGED" && "changed the priority"}
@@ -415,12 +410,13 @@ export function TaskActivity({ task, workspaceUsers = [], addComment, isAddingCo
                   <div className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(log.createdAt), { addSuffix: true })}
                   </div>
-                  <div className="mt-1.5 flex items-center gap-2 text-xs font-mono">
-                    <span className="px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground line-through">
+                  {/* 🟢 5. flex-wrap prevents long history string updates from breaking out */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-mono min-w-0">
+                    <span className="px-1.5 py-0.5 rounded bg-muted/50 text-muted-foreground line-through break-all">
                       {log.oldValue || "None"}
                     </span>
-                    <span className="text-muted-foreground">→</span>
-                    <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700">
+                    <span className="text-muted-foreground shrink-0">→</span>
+                    <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-700 break-all">
                       {log.newValue}
                     </span>
                   </div>

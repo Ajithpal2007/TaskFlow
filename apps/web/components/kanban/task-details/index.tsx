@@ -77,44 +77,49 @@ export function TaskDetailsDialog() {
     );
 } else {
     dialogBody = (
-      // 1. The Master Wrapper: Forces exactly 100% height and width of the modal, no taller, no wider.
-      <div className="flex w-full h-full flex-col md:flex-row overflow-hidden bg-background">
+      // 🟢 THE ULTIMATE FIX: CSS Grid is much stricter than Flexbox. 
+      // 'minmax(0, 1fr)' mathematically forbids the left column from pushing the right column.
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_320px] w-full h-full overflow-hidden bg-background">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        {/* 2. min-w-0: THIS IS THE MAGIC KEY. It forces the left side to wrap long text instead of pushing the sidebar away. */}
-        <div className="flex-1 min-w-0 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <TaskHeader task={task} updateTask={updateTask} />
-          <TaskTitle task={task} updateTask={updateTask} />
-          <div className="w-full max-w-full overflow-x-auto">
-            <TaskDescription
-              task={task}
-              updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
-            />
-          </div>
+        {/* Locked height, independent scrolling, hidden horizontal overflow */}
+        <div className="h-full overflow-y-auto overflow-x-hidden [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          {/* We wrap the content in a min-h-max so it flows naturally inside the scrolling box */}
+          <div className="flex flex-col min-h-max">
+            <TaskHeader task={task} updateTask={updateTask} />
+            <TaskTitle task={task} updateTask={updateTask} />
+            
+            <div className="w-full overflow-hidden">
+              <TaskDescription
+                task={task}
+                updateTask={(data) => updateTask({ taskId: task.id, updates: data })}
+              />
+            </div>
 
-         <div className="w-full max-w-full overflow-x-hidden">
-            <TaskSubtasks
-              task={task}
-              createSubtask={createSubtask}
-              isCreatingSubtask={isCreatingSubtask}
-              updateSubtask={updateSubtask}
-              deleteSubtask={deleteSubtask}
-            />
-            <TaskActivity
-              task={task}
-              workspaceUsers={activeWorkspace?.members || []} 
-              addComment={addComment}
-              isAddingComment={isAddingComment}
-              linkIssue={linkIssue}
-              unlinkIssue={unlinkIssue}
-            />
+            <div className="p-6 md:p-8 pt-0 space-y-10 w-full overflow-hidden">
+              <TaskSubtasks
+                task={task}
+                createSubtask={createSubtask}
+                isCreatingSubtask={isCreatingSubtask}
+                updateSubtask={updateSubtask}
+                deleteSubtask={deleteSubtask}
+              />
+              <TaskActivity
+                task={task}
+                workspaceUsers={activeWorkspace?.members || []} 
+                addComment={addComment}
+                isAddingComment={isAddingComment}
+                linkIssue={linkIssue}
+                unlinkIssue={unlinkIssue}
+              />
+            </div>
           </div>
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        {/* 3. shrink-0: This tells the browser "NEVER squish this sidebar, and NEVER wrap it to the bottom on desktop." */}
-        <div className="w-full md:w-[320px] shrink-0 border-t md:border-t-0 md:border-l bg-muted/10 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <div className="p-6 md:p-8">
+        {/* Locked height, independent scrolling */}
+        <div className="h-full overflow-y-auto border-t md:border-t-0 md:border-l bg-muted/10 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="p-6 md:p-8 min-h-max">
             <TaskSidebar
               task={task}
               updateTask={updateTask}
@@ -130,8 +135,8 @@ export function TaskDetailsDialog() {
 
   return (
     <Dialog open={!!resolvedTaskId} onOpenChange={(open) => !open && handleClose()}>
-      {/* 4. The Modal Frame: Fixed width, fixed height (85vh), no internal layout rules fighting us. */}
-      <DialogContent className="w-[95vw] max-w-5xl h-[85vh] p-0 overflow-hidden">
+      {/* 🟢 Strictly enforced max-height (85vh) forces the inside elements to scroll instead of expanding */}
+      <DialogContent className="max-w-[95vw] md:max-w-5xl h-[85vh] max-h-[85vh] p-0 overflow-hidden flex flex-col">
         {dialogBody}
       </DialogContent>
     </Dialog>

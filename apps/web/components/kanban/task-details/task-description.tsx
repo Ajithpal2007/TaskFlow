@@ -96,22 +96,22 @@ const workspaceId = params.workspaceId as string;
 
 
   return (
-    <div className="px-6 md:px-8 pt-4 pb-6 space-y-3">
+    // 🟢 1. Added 'min-w-0 w-full overflow-hidden' to the outermost wrapper
+    <div className="px-6 md:px-8 pt-4 pb-6 space-y-3 min-w-0 w-full overflow-hidden">
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 font-semibold text-lg text-foreground">
-          <AlignLeft className="h-5 w-5 text-muted-foreground" />
-          Description
+      <div className="flex items-center justify-between min-w-0">
+        <div className="flex items-center gap-2 font-semibold text-lg text-foreground truncate">
+          <AlignLeft className="h-5 w-5 text-muted-foreground shrink-0" />
+          <span className="truncate">Description</span>
         </div>
 
         {(isEmpty || isEditing) && (
           <Button
             variant="secondary"
             size="sm"
-            // 🟢 Change from onClick to onMouseDown to beat the React race condition
             onMouseDown={handleAutoDraft}
             disabled={isLoading || (!task?.title && !description)}
-            className="h-7 text-xs bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors"
+            className="h-7 text-xs bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border border-indigo-500/20 transition-colors shrink-0 ml-4"
           >
             {isLoading ? (
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
@@ -123,26 +123,26 @@ const workspaceId = params.workspaceId as string;
         )}
       </div>
 
-      <div className="ml-7">
+      {/* 🟢 2. Added 'min-w-0 w-full' here to protect the editor wrappers */}
+      <div className="ml-7 min-w-0 w-full pr-7">
         {!isEditing && isEmpty && !isLoading && (
           <div
             onClick={() => setIsEditing(true)}
-            className="py-6 px-4 text-sm text-muted-foreground bg-muted/20 hover:bg-muted/50 border border-dashed rounded-lg cursor-text transition-all text-center"
+            className="py-6 px-4 text-sm text-muted-foreground bg-muted/20 hover:bg-muted/50 border border-dashed rounded-lg cursor-text transition-all text-center w-full"
           >
             No description provided. Click to add one or use the Auto-Draft button above.
           </div>
         )}
 
-        {/* 🟢 THE FIX: The Illusion Swap */}
         {isLoading ? (
-          /* 1. While Loading: Show a safe, scrolling HTML viewer that handles incomplete tags perfectly */
+          /* 🟢 3. Added 'overflow-x-hidden break-words' so AI generated HTML doesn't blow out the width */
           <div
-            className="p-4 border rounded-md bg-muted/10 min-h-[150px] max-h-[400px] overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+            className="p-4 border rounded-md bg-muted/10 min-h-[150px] max-h-[400px] overflow-y-auto overflow-x-hidden break-words prose prose-sm dark:prose-invert max-w-none w-full"
             dangerouslySetInnerHTML={{ __html: completion }}
           />
         ) : (
-          /* 2. When Done: Show the editable Rich Text Editor with the final, valid HTML */
-          <div className={!isEditing && isEmpty ? "hidden" : "block max-h-[400px] overflow-y-auto rounded-md"}>
+          /* 🟢 4. Added 'overflow-x-hidden w-full min-w-0' to permanently cage the RichTextEditor */
+          <div className={!isEditing && isEmpty ? "hidden" : "block max-h-[400px] overflow-y-auto overflow-x-hidden rounded-md w-full min-w-0"}>
             <RichTextEditor
               value={description}
               onChange={setDescription}

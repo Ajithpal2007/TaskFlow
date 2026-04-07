@@ -77,12 +77,13 @@ export function TaskDetailsDialog() {
     );
  } else {
     dialogBody = (
-      // 🟢 Added 'w-full' and 'min-h-0' to the main wrapper
-      <div className="flex-1 flex flex-col md:flex-row w-full h-full min-h-0 overflow-hidden">
+      // 🟢 THE NUCLEAR FIX: 'absolute inset-0' forces this container to perfectly 
+      // map to the parent Dialog's size, ignoring all UI library quirks.
+      <div className="absolute inset-0 flex flex-col md:flex-row bg-background">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
-        {/* 🟢 Added 'min-h-0' - THIS IS WHAT FIXES YOUR SCROLLING! */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+        {/* We just need 'flex-1' and 'overflow-y-auto'. No complicated min-h-0 math needed anymore! */}
+        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
           <TaskHeader task={task} updateTask={updateTask} />
           <TaskTitle task={task} updateTask={updateTask} />
           <TaskDescription
@@ -110,14 +111,16 @@ export function TaskDetailsDialog() {
         </div>
 
         {/* --- RIGHT COLUMN: SIDEBAR METADATA --- */}
-        {/* 🟢 Added 'min-h-0' here too so the sidebar can scroll independently */}
-        <div className="w-full md:w-[280px] lg:w-[320px] shrink-0 bg-muted/10 border-t md:border-t-0 md:border-l p-6 md:p-8 overflow-y-auto min-h-0 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
-          <TaskSidebar
-            task={task}
-            updateTask={updateTask}
-            deleteTask={deleteTask}
-            isDeleting={isDeleting}
-          />
+        {/* Fixed 300px width on desktop, full width on mobile */}
+        <div className="w-full md:w-[300px] lg:w-[320px] bg-muted/10 border-t md:border-t-0 md:border-l overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          <div className="p-6 md:p-8">
+            <TaskSidebar
+              task={task}
+              updateTask={updateTask}
+              deleteTask={deleteTask}
+              isDeleting={isDeleting}
+            />
+          </div>
         </div>
       </div>
     );
@@ -125,8 +128,9 @@ export function TaskDetailsDialog() {
 
   return (
     <Dialog open={!!resolvedTaskId} onOpenChange={(open) => !open && handleClose()}>
-      {/* 🟢 Cleaned up the width sizing to enforce a rigid box */}
-      <DialogContent className="w-full max-w-[95vw] md:max-w-4xl lg:max-w-5xl flex flex-col h-[85vh] p-0 overflow-hidden gap-0">
+      {/* 🟢 SIMPLIFIED DIALOG: We removed the flex logic here. 
+          We just set the size to 85vh and make it 'relative'. */}
+      <DialogContent className="max-w-[95vw] md:max-w-[900px] lg:max-w-[1100px] h-[85vh] p-0 overflow-hidden relative">
         {dialogBody}
       </DialogContent>
     </Dialog>

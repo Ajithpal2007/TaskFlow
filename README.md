@@ -65,7 +65,7 @@ No console logging in production. Full telemetry pipeline for logs, traces, and 
 - Zero data loss even with concurrent multi-user editing
 
 **Real-Time Collaboration in Action** — Multiple users editing documents and canvases simultaneously:  
-![Real-Time Collaboration in Action](https://github.com/user-attachments/assets/c20f3de3-6451-4256-9502-5fbb429c3d3a)
+https://github.com/user-attachments/assets/c20f3de3-6451-4256-9502-5fbb429c3d3a
 
 ---
 

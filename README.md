@@ -1,4 +1,6 @@
-# 🚀 TaskFlow
+# TaskFlow
+
+**🚀 A highly scalable, real-time task management and collaboration platform built with a distributed architecture.**
 
 ![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js)
 ![Fastify](https://img.shields.io/badge/Fastify-202020?style=for-the-badge&logo=fastify)
@@ -7,73 +9,138 @@
 ![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-000000?style=for-the-badge&logo=opentelemetry)
 ![Grafana](https://img.shields.io/badge/Grafana-F46800?style=for-the-badge&logo=grafana)
 
-> A highly scalable, real-time task management and collaboration platform built with a distributed architecture. 
+**[Live Demo](https://task-flow-web-seven.vercel.app)** | **[API Documentation](https://taskflow-8047ebcf.mintlify.app/)** | **[Report a Bug](https://github.com/Ajithpal2007/TaskFlow/issues)**
 
-**[Live Demo](https://task-flow-web-seven.vercel.app)** | **[API Documentation](#)** | **[Report a Bug](#)**
+---
+
+## ✨ Overview
+
+**TaskFlow** is a modern, production-grade SaaS platform for teams that need **realtime collaboration**, structured workflows, AI assistance, and enterprise-level security in one unified workspace.
+
+Built as a **pnpm monorepo** with clear separation of concerns:
+- `apps/api` — Fastify + TypeScript backend (deployed on Render / PaaS)
+- `apps/web` — Next.js 15 (App Router) frontend (deployed on Vercel Edge)
+- Shared packages under `packages/*` for Prisma, UI primitives, validators, and tooling
+
+The architecture is intentionally distributed: edge-deployed frontend + stateful, fully-monitored backend with production-grade observability.
 
 ---
 
 ## 🏗 System Architecture
 
-*Below is the high-level architecture demonstrating the separation of concerns between the edge-deployed frontend and the stateful, fully-monitored backend infrastructure.*
+**High-level architecture showing separation between the edge frontend and the monitored backend infrastructure.**
 
-<div align="center">
-  <img src="./docs/architecture-diagram.png" alt="TaskFlow System Architecture" width="800"/>
-</div>
+![Complete Architecture Diagram](docs/images/Complete%20Architecture.svg)
+
+**Detailed architecture documentation** (PDFs) is available in the `/docs` folder.
+
+---
 
 ## 🧠 Engineering Highlights & Technical Challenges
 
-Building TaskFlow required solving several enterprise-level distributed system challenges. 
+Building TaskFlow required solving real enterprise distributed-system problems.
 
 ### 1. Cross-Domain Authentication & Session Management
-Separating the frontend (Serverless Edge) and backend (PaaS) introduced significant hurdles with modern browser privacy policies (Third-Party Cookies).
-* **Challenge:** Google Chrome and Safari actively block cross-site cookies, resulting in dropped sessions between `vercel.app` and `onrender.com`.
-* **Solution:** Engineered a robust, dynamic CORS pipeline within Fastify that explicitly mirrors the request origin. Configured `better-auth` to utilize secure, `SameSite="none"` cookies while dynamically instructing the Node server to trust upstream load balancer proxies. Intercepted raw Fastify headers using adapter functions to ensure the auth middleware could properly decrypt cross-domain payloads.
+Frontend (Vercel Edge) and backend (Render PaaS) run on completely different domains. Modern browser privacy policies (Chrome, Safari) aggressively block third-party cookies.
+
+**Solution**:  
+- Dynamic CORS pipeline in Fastify that mirrors the request `Origin`  
+- `better-auth` configured with `SameSite="none"` + secure cookies  
+- Custom header adapter to let auth middleware correctly decrypt cross-origin payloads  
+- Full proxy trust configuration for load balancers
 
 ### 2. Distributed Observability (The LGTM Stack)
-To ensure high availability and rapid debugging, the platform relies on a complete telemetry pipeline rather than standard console logging.
-* **Logs:** Integrated `pino` with Grafana Loki, batching and streaming structured JSON logs asynchronously to prevent event-loop blocking.
-* **Traces:** Implemented OpenTelemetry (OTel) auto-instrumentation. Injected a tracer pre-boot to map distributed request lifecycles (waterfall tracing) across Fastify, Prisma, and Redis, exporting data to Grafana Tempo via OTLP over HTTP.
-* **Metrics:** Utilized Prometheus client libraries to expose a `/metrics` endpoint, tracking CPU/memory consumption, route response times, and custom business-logic counters (e.g., successful workspace generations).
+No console logging in production. Full telemetry pipeline for logs, traces, and metrics.
+
+- **Logs**: Pino + Grafana Loki (structured, batched, async)  
+- **Traces**: OpenTelemetry auto-instrumentation + Grafana Tempo (waterfall tracing across Fastify, Prisma, Redis)  
+- **Metrics**: Prometheus `/metrics` endpoint with custom business counters (workspace creation, AI calls, etc.)
+
+**Observability Proof** — Live Grafana dashboard showing real logs, traces, and metrics in production:  
+![Observability Proof Screenshot](docs/images/logs.png)
 
 ### 3. Real-Time Collaboration & WebSockets
-* **Architecture:** Leveraged `yjs` (CRDTs) and `@hocuspocus/server` running on a dedicated Fastify WebSocket route.
-* **Persistence:** Built a custom database extension to serialize binary Yjs state directly into PostgreSQL via Prisma, ensuring concurrent user edits are perfectly synced and safely persisted without data loss.
+- **Engine**: Yjs (CRDTs) + `@hocuspocus/server` on a dedicated Fastify WebSocket route  
+- **Persistence**: Custom Prisma extension that serializes binary Yjs state directly into PostgreSQL  
+- Zero data loss even with concurrent multi-user editing
+
+**Real-Time Collaboration in Action** — Multiple users editing documents and canvases simultaneously:  
+![Real-Time Collaboration in Action](docs/images/web%20socket%20.mp4)
+
+---
+
+## 🚀 Key Features
+
+| Category                  | Features |
+|---------------------------|----------|
+| **Workspaces & Teams**    | Role-based access (OWNER, ADMIN, MEMBER, GUEST), invitations, activity logs |
+| **Projects & Tasks**      | Auto sequence IDs, assignees, subtasks, tags, priorities, status tracking |
+| **Realtime Collaboration**| Documents (Yjs), Canvas whiteboards (Liveblocks), Chat with reactions, Video calling with caht |
+| **AI Integration**        | Task generation, summaries & insights (LangChain + OpenAI) |
+| **File Management**       | Secure uploads via UploadThing |
+| **Billing**               | Stripe + Razorpay, Pro & Enterprise plans |
+| **Notifications**         | In-app + email via BullMQ workers |
+| **Onboarding**            | Automatic first-workspace seeding with demo data |
 
 ---
 
 ## 🛠 Tech Stack
 
 ### Frontend (Client)
-* **Framework:** Next.js (React)
-* **State Management:** React Query (TanStack), Zustand
-* **Styling:** Tailwind CSS, Radix UI
+- Next.js 15 (App Router) + React 19
+- TanStack Query (React Query) + Zustand
+- Tailwind CSS + shadcn/ui + custom `@repo/ui` primitives
 
 ### Backend (API)
-* **Core:** Node.js, Fastify, TypeScript
-* **Database & ORM:** PostgreSQL, Prisma
-* **Caching & Queues:** Redis, Upstash
-* **Authentication:** Better Auth
-* **Real-time Engine:** WebSockets, Hocuspocus (Yjs)
+- Node.js + Fastify + TypeScript
+- Prisma ORM + PostgreSQL
+- BullMQ + Redis / Upstash
+- Better Auth (authentication)
+- Zod (validation)
+- Hocuspocus + Yjs (realtime)
 
 ### DevOps & Observability
-* **Hosting:** Vercel (Frontend), Render (Backend)
-* **Telemetry:** OpenTelemetry, Grafana Cloud (Loki, Tempo, Mimir)
-* **Bundler:** Tsup
+- **Hosting**: Vercel (Frontend) + Render (Backend)
+- **Telemetry**: OpenTelemetry, Grafana Cloud (Loki, Tempo, Mimir), Pino
+- **Bundler**: tsup (API)
+- **Monorepo**: pnpm workspaces + Turborepo
 
 ---
 
-## 💻 Local Development
+## 📐 Domain & Data System
+
+![Domain & Data Model](docs/images/Domain%20%26%20Data%20System.svg)
+
+### Prisma Schema
+![Prisma Schema Diagram](docs/images/prisma-schema.svg)
+
+---
+
+## 🛠 Installation & Local Development
 
 ### Prerequisites
-* Node.js (v18+)
-* pnpm
-* PostgreSQL (Running locally or via Docker)
-* Redis
+- Node.js **20+**
+- pnpm **9+**
+- PostgreSQL (local or Neon/Supabase)
+- Redis (local or Upstash)
 
 ### Quick Start
 
-1. **Clone the repository**
-   ```bash
-   git clone [https://github.com/yourusername/taskflow.git](https://github.com/yourusername/taskflow.git)
-   cd taskflow
+```bash
+# 1. Clone the repository
+git clone https://github.com/yourusername/taskflow.git
+cd taskflow
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Set up environment variables
+cp .env.example .env
+# ← Fill in your DATABASE_URL, Redis, Better Auth secrets, Stripe keys, etc.
+
+# 4. Database setup
+pnpm --filter @repo/database prisma generate
+pnpm --filter @repo/database prisma migrate dev
+
+# 5. Run development servers
+pnpm dev

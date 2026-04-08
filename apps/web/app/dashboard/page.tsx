@@ -97,15 +97,8 @@ export default function DashboardRootPage() {
         )}
       </div>
       
-      {/* Fallback for power users who just want to create an empty one */}
-      {!isInitializing && (
-         <div className="mt-4 relative z-10">
-           <span className="text-xs text-muted-foreground">or </span>
-           <button onClick={() => {/* Open your normal modal here if you want */}} className="text-xs font-medium text-primary hover:underline">
-             create a blank workspace manually
-           </button>
-         </div>
-      )}
+      
+      
     </div>
   );
 }

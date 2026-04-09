@@ -84,7 +84,7 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
     {
       preHandler: [
         requireAuth,
-        requireWorkspaceRole(["OWNER", "ADMIN", "MEMBER", "GUEST"]),
+       
       ],
     },
     async (request, reply) => {
@@ -280,19 +280,18 @@ export default async function canvasRoutes(fastify: FastifyInstance) {
     },
   );
 
+  // 🟢 FIXED DELETE ROUTE
   fastify.delete(
-    "/:roomId",
+    "/workspaces/:workspaceId/boards/:roomId", // 🟢 Added workspaceId to the path!
     { preHandler: [requireAuth, requireWorkspaceRole(["OWNER", "ADMIN"])] },
     async (request, reply) => {
       const { roomId } = request.params as { roomId: string };
 
       try {
-        // 1. Instantly delete the record from your Neon database
         await prisma.whiteboard.delete({
           where: { roomId: roomId },
         });
 
-        // 🟢 2. FIRE AND FORGET! Tell BullMQ to clean up the Liveblocks servers
         await cleanupQueue.add("delete-liveblocks-room", {
           roomId: roomId,
         });

@@ -5,26 +5,24 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiClient } from "@/app/lib/api-client";
 
-export function DeleteBoardButton({ roomId }: { roomId: string }) {
+// 🟢 1. Add workspaceId to the props definition!
+export function DeleteBoardButton({ roomId, workspaceId }: { roomId: string; workspaceId: string }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
 
   const handleDelete = async (e: React.MouseEvent) => {
-    // 1. Stop the click from bubbling up to any other elements
     e.preventDefault();
     e.stopPropagation();
 
-    // 2. Add a quick confirmation so users don't accidentally delete their work!
     if (!confirm("Are you sure you want to delete this whiteboard? This cannot be undone.")) {
       return;
     }
 
     try {
       setIsDeleting(true);
-      // 3. Call the Fastify route we just built
-      await apiClient.delete(`/canvas/${roomId}`); 
+      // 🟢 2. Now workspaceId is available to use in the URL
+      await apiClient.delete(`/canvas/workspaces/${workspaceId}/boards/${roomId}`);
       
-      // 4. Tell Next.js to re-fetch the Server Component data instantly
       router.refresh(); 
     } catch (error) {
       console.error("Failed to delete board:", error);

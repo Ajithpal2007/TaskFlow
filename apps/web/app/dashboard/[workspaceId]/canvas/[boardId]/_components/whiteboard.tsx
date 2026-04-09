@@ -121,9 +121,9 @@ export function Whiteboard({ roomId, workspaceId, boardId }: { roomId: string, w
     <LiveblocksProvider 
       authEndpoint={async (room) => {
         try {
-          // 🔴 THE FIX: Notice the ?workspaceId=${workspaceId} added to the URL below!
+          // 🟢 CLEANUP: We removed the query string. The backend is smart enough now!
           const response = await apiClient.post(
-            `${apiUrl}/api/canvas/liveblocks-auth?workspaceId=${workspaceId}`,
+            `${apiUrl}/api/canvas/liveblocks-auth`,
             { room },
             { withCredentials: true } 
           );

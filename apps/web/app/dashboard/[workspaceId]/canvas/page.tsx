@@ -57,7 +57,7 @@ export default async function CanvasDashboardPage({ params }: { params: { worksp
               </Link>
 
               <div className="absolute top-3 right-3 z-20">
-                <DeleteBoardButton roomId={board.roomId} />
+                <DeleteBoardButton roomId={board.roomId} workspaceId={params.workspaceId} />
               </div>
 
               {/* 🟢 Upgraded to aspect-video (16:9) to keep standard thumbnail proportions */}

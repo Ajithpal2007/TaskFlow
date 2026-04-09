@@ -125,153 +125,154 @@ export function CreateTaskDialog({ projectId, workspaceId }: { projectId: string
     
   
    
-
-  return (
+return (
     <Dialog open={isCreateTaskModalOpen} onOpenChange={handleOpenChange}>
-     <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[85vh] overflow-y-auto p-6 rounded-xl">
-        <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
-          <DialogDescription>
-            Add a new issue to your project board.
-          </DialogDescription>
-        </DialogHeader>
+      {/* 🔴 1. The Hard Reset: Override Shadcn grid, force flex-col, remove default padding */}
+      <DialogContent className="max-w-[600px] w-[95vw] max-h-[85vh] p-0 overflow-hidden flex flex-col gap-0 border outline-none rounded-xl">
+        
+        {/* 🔴 2. Fixed Header: Stays glued to the top */}
+        <div className="p-6 pb-2 shrink-0 bg-background border-b z-10">
+          <DialogHeader>
+            <DialogTitle>Create New Task</DialogTitle>
+            <DialogDescription>
+              Add a new issue to your project board.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 py-4">
+        {/* 🔴 3. Scrollable Body: Only the form scrolls, never stretching the modal */}
+        <div className="p-6 overflow-y-auto flex-1 min-h-0 min-w-0 bg-background">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Task Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Update landing page hero image" autoFocus {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Task Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Update landing page hero image" autoFocus {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            
-           {/* 🟢 The upgraded Description Field */}
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel>Description</FormLabel>
-                    
-                    {/* The Magic Button */}
-                    <Button 
-                      type="button" 
-                      variant="secondary" 
-                      size="sm" 
-                      // Use onMouseDown just like the other component to prevent focus issues!
-                      onMouseDown={handleAutoDraft}
-                      disabled={isLoading || !form.watch("title")}
-                      className="h-7 text-xs bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border-indigo-500/20 transition-colors"
-                    >
+              {/* 🟢 The upgraded Description Field */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Description</FormLabel>
+                      
+                      {/* The Magic Button */}
+                      <Button 
+                        type="button" 
+                        variant="secondary" 
+                        size="sm" 
+                        onMouseDown={handleAutoDraft}
+                        disabled={isLoading || !form.watch("title")}
+                        className="h-7 text-xs bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 border-indigo-500/20 transition-colors"
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                        )}
+                        {isLoading ? "Drafting..." : "Auto-Draft"}
+                      </Button>
+                    </div>
+
+                    <FormControl>
+                      {/* 🟢 The Illusion Swap for the Create Dialog */}
                       {isLoading ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                      )}
-                      {isLoading ? "Drafting..." : "Auto-Draft"}
-                    </Button>
-                  </div>
-
-                  <FormControl>
-                    {/* 🟢 The Illusion Swap for the Create Dialog */}
-                    {isLoading ? (
-                      /* 1. The Streaming HTML Viewer */
-                      <div 
-                        className="p-4 border rounded-md bg-muted/10 h-[200px] overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: completion }}
-                      />
-                    ) : (
-                      /* 2. The Interactive Rich Text Editor */
-                      <div className="border rounded-md h-[200px] overflow-y-auto">
-                        <RichTextEditor 
-                          value={field.value} 
-                          onChange={field.onChange} 
-                          
-                          onBlur={() => {}}
-                          
-                          isEditing={true} 
-                          setIsEditing={() => {}} 
+                        <div 
+                          className="p-4 border rounded-md bg-muted/10 h-[200px] overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: completion }}
                         />
-                      </div>
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="BACKLOG">Backlog</SelectItem>
-                        <SelectItem value="TODO">To Do</SelectItem>
-                        <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                        <SelectItem value="DONE">Done</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      ) : (
+                        <div className="border rounded-md h-[200px] overflow-y-auto min-w-0">
+                          <RichTextEditor 
+                            value={field.value} 
+                            onChange={field.onChange} 
+                            onBlur={() => {}}
+                            isEditing={true} 
+                            setIsEditing={() => {}} 
+                          />
+                        </div>
+                      )}
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="NONE">None</SelectItem>
-                        <SelectItem value="LOW">Low</SelectItem>
-                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                        <SelectItem value="HIGH">High</SelectItem>
-                        <SelectItem value="URGENT">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="BACKLOG">Backlog</SelectItem>
+                          <SelectItem value="TODO">To Do</SelectItem>
+                          <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                          <SelectItem value="DONE">Done</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isCreating || isLoading}>
-                {isCreating ? "Creating..." : "Create Task"}
-              </Button>
-            </DialogFooter>
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Priority</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="NONE">None</SelectItem>
+                          <SelectItem value="LOW">Low</SelectItem>
+                          <SelectItem value="MEDIUM">Medium</SelectItem>
+                          <SelectItem value="HIGH">High</SelectItem>
+                          <SelectItem value="URGENT">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          </form>
-        </Form>
+              <DialogFooter className="pt-6 mt-2">
+                <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isCreating || isLoading}>
+                  {isCreating ? "Creating..." : "Create Task"}
+                </Button>
+              </DialogFooter>
+
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

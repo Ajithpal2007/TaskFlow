@@ -74,7 +74,7 @@ Real-Time Collaboration in Action — Multiple users editing documents and canva
 
 <p align="center">
   <video src="https://github.com/user-attachments/assets/c20f3de3-6451-4256-9502-5fbb429c3d3a" autoplay loop muted playsinline width="100%"></video>
-</p>
+</p> 
 
 
 

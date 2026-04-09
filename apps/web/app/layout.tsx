@@ -15,6 +15,9 @@ import "@repo/ui/globals.css";
 export const metadata: Metadata = {
   title: "TaskFlow",
   description: "TaskFlow is a task management tool",
+  icons: {
+    icon: "/TaskFlowLogo.png",
+  },
 };
 
 export default function RootLayout({

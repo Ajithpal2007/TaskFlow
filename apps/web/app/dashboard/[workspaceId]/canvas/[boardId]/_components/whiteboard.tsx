@@ -84,37 +84,12 @@ function CollaborativeEditor({ roomId, workspaceId, boardId }: { roomId: string,
 // ---------------------------------------------------------
 // 3. THE AUTH PROVIDER WRAPPER
 // ---------------------------------------------------------
+// 🔴 ULTRA SAFE MODE: No Liveblocks, No Suspense, No Auth. Just the Canvas.
 export function Whiteboard({ roomId, workspaceId, boardId }: { roomId: string, workspaceId: string, boardId: string }) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   
   return (
-    <LiveblocksProvider 
-      authEndpoint={async (room) => {
-        try {
-          const response = await apiClient.post(
-            `${apiUrl}/api/canvas/liveblocks-auth`,
-            { room },
-            { withCredentials: true } 
-          );
-          
-          return response.data;
-        } catch (error) {
-          console.error("Liveblocks Auth Error:", error);
-          throw error;
-        }
-      }}
-    >
-      <RoomProvider id={roomId} initialPresence={{ cursor: null }}>
-        {/* 🔴 FIX #2: CLIENT-SIDE SUSPENSE */}
-        {/* This forces the UI to show a loader until Liveblocks actually finishes connecting. */}
-        <ClientSideSuspense fallback={
-          <div className="flex h-full w-full items-center justify-center absolute inset-0 bg-background z-50">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        }>
-          <CollaborativeEditor roomId={roomId} workspaceId={workspaceId} boardId={boardId} />
-        </ClientSideSuspense>
-      </RoomProvider>
-    </LiveblocksProvider>
+    <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 50 }}>
+      <Tldraw autoFocus inferDarkMode />
+    </div>
   );
 }

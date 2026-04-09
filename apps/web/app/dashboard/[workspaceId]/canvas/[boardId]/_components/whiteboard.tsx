@@ -1,21 +1,17 @@
 "use client";
 
-// 🟢 1. Added useMemo here!
-import { useEffect, useState, useMemo } from "react";
-import { Tldraw, createTLStore, defaultShapeUtils, useEditor } from "@tldraw/tldraw";
+import { useState, useMemo } from "react";
+import { Tldraw, useEditor } from "@tldraw/tldraw";
 import "@tldraw/tldraw/tldraw.css";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "@/app/lib/api-client"; 
 import { uploadFiles } from "@/app/lib/uploadthing"; 
 
-// 🟢 2. Added ClientSideSuspense here!
 import { LiveblocksProvider, RoomProvider, useRoom, ClientSideSuspense } from "@liveblocks/react/suspense";
-import { LiveblocksYjsProvider } from "@liveblocks/yjs";
-import * as Y from "yjs";
 
 // ---------------------------------------------------------
-// 1. THUMBNAIL GENERATOR COMPONENT (Unchanged)
+// 1. THUMBNAIL GENERATOR COMPONENT
 // ---------------------------------------------------------
 function ThumbnailGenerator({ workspaceId, boardId }: { workspaceId: string, boardId: string }) {
   const editor = useEditor();
@@ -70,13 +66,39 @@ function ThumbnailGenerator({ workspaceId, boardId }: { workspaceId: string, boa
 
 // ---------------------------------------------------------
 // 2. THE MULTIPLAYER CANVAS
-
+// ---------------------------------------------------------
 function CollaborativeEditor({ roomId, workspaceId, boardId }: { roomId: string, workspaceId: string, boardId: string }) {
-  // All Liveblocks and custom UI are temporarily removed for the test.
-  
+  const room = useRoom();
+
+  // 🟢 We must memoize the UI components so React doesn't recreate them every frame
+  const customComponents = useMemo(() => ({
+    SharePanel: () => (
+      <div className="flex items-center gap-2 pointer-events-none">
+        
+        {/* Our Thumbnail Button */}
+        <ThumbnailGenerator workspaceId={workspaceId} boardId={boardId} />
+        
+        {/* Multiplayer Badge */}
+        <div className="bg-background border rounded-md px-3 py-1.5 text-xs font-bold shadow-sm flex items-center gap-2 pointer-events-auto">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+          </span>
+          Room Active
+        </div>
+      </div>
+    ),
+  }), [workspaceId, boardId]);
+
   return (
     <div className="absolute inset-0">
-      <Tldraw autoFocus inferDarkMode />
+      <Tldraw
+        autoFocus
+        inferDarkMode
+        components={customComponents}
+        // 🟢 UNCOMMENT THIS LINE LATER WHEN YOU GET YOUR HOBBY KEY
+        // licenseKey={process.env.NEXT_PUBLIC_TLDRAW_KEY} 
+      />
     </div>
   );
 }
@@ -84,12 +106,36 @@ function CollaborativeEditor({ roomId, workspaceId, boardId }: { roomId: string,
 // ---------------------------------------------------------
 // 3. THE AUTH PROVIDER WRAPPER
 // ---------------------------------------------------------
-// 🔴 ULTRA SAFE MODE: No Liveblocks, No Suspense, No Auth. Just the Canvas.
 export function Whiteboard({ roomId, workspaceId, boardId }: { roomId: string, workspaceId: string, boardId: string }) {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   
   return (
-    <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 50 }}>
-      <Tldraw autoFocus inferDarkMode />
-    </div>
+    <LiveblocksProvider 
+      authEndpoint={async (room) => {
+        try {
+          const response = await apiClient.post(
+            `${apiUrl}/api/canvas/liveblocks-auth`,
+            { room },
+            { withCredentials: true } 
+          );
+          
+          return response.data;
+        } catch (error) {
+          console.error("Liveblocks Auth Error:", error);
+          throw error;
+        }
+      }}
+    >
+      <RoomProvider id={roomId} initialPresence={{ cursor: null }}>
+        {/* 🟢 Suspense keeps the UI stable while Liveblocks connects */}
+        <ClientSideSuspense fallback={
+          <div className="flex h-full w-full items-center justify-center absolute inset-0 bg-background z-50">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        }>
+          <CollaborativeEditor roomId={roomId} workspaceId={workspaceId} boardId={boardId} />
+        </ClientSideSuspense>
+      </RoomProvider>
+    </LiveblocksProvider>
   );
 }

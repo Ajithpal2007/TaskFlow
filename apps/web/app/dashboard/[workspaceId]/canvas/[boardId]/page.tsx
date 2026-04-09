@@ -4,7 +4,7 @@ import { BoardTitle } from "./_components/board-title";
 import { Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
 
-// 🔴 THE FIX: Tell Next.js to only render this component in the browser!
+// 🟢 Force Client-Side Rendering to prevent Hydration crashes
 const Whiteboard = dynamic(
   () => import("./_components/whiteboard").then((m) => m.Whiteboard),
   { 

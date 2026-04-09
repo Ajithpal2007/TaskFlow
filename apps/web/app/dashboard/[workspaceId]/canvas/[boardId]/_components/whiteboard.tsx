@@ -70,38 +70,13 @@ function ThumbnailGenerator({ workspaceId, boardId }: { workspaceId: string, boa
 
 // ---------------------------------------------------------
 // 2. THE MULTIPLAYER CANVAS
-// ---------------------------------------------------------
+
 function CollaborativeEditor({ roomId, workspaceId, boardId }: { roomId: string, workspaceId: string, boardId: string }) {
-  const room = useRoom();
-
-  // 🔴 FIX #1: MEMOIZE THE CUSTOM UI
-  // This stops Tldraw from infinitely re-rendering and crashing the toolbars.
-  const customComponents = useMemo(() => ({
-    SharePanel: () => (
-      <div className="flex items-center gap-2 pointer-events-none">
-        
-        {/* Our Thumbnail Button */}
-        <ThumbnailGenerator workspaceId={workspaceId} boardId={boardId} />
-        
-        {/* Multiplayer Badge */}
-        <div className="bg-background border rounded-md px-3 py-1.5 text-xs font-bold shadow-sm flex items-center gap-2 pointer-events-auto">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </span>
-          Room Active
-        </div>
-      </div>
-    ),
-  }), [workspaceId, boardId]);
-
+  // All Liveblocks and custom UI are temporarily removed for the test.
+  
   return (
     <div className="absolute inset-0">
-      <Tldraw
-        autoFocus
-        inferDarkMode
-        components={customComponents} // 👈 Passed the memoized object here
-      />
+      <Tldraw autoFocus inferDarkMode />
     </div>
   );
 }

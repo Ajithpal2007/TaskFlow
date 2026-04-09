@@ -85,8 +85,8 @@ function CollaborativeEditor({ roomId, workspaceId, boardId }: { roomId: string,
   return (
     <div className="absolute inset-0">
       <Tldraw
-        // 🟢 THE FIX: Because we removed the 'store' prop, this persistenceKey will now actually work!
-        persistenceKey={`canvas-${roomId}`}
+       
+       
         autoFocus
         inferDarkMode
         components={{

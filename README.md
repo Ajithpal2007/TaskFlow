@@ -24,6 +24,12 @@ Built as a **pnpm monorepo** with clear separation of concerns:
 
 The architecture is intentionally distributed: edge-deployed frontend + stateful, fully-monitored backend with production-grade observability.
 
+Demo Video of TaskFlow
+
+<p align="center">
+  <video src="https://ba16nmh63n.ufs.sh/f/eMd9rUYt0HxnWwCcjKglqDuN6hvVxekJFXoBaZKQUlm8Ls3c" autoplay loop muted playsinline width="100%"></video>
+</p>
+
 ---
 
 ## 🏗 System Architecture

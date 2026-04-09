@@ -70,7 +70,7 @@ No console logging in production. Full telemetry pipeline for logs, traces, and 
 - **Persistence**: Custom Prisma extension that serializes binary Yjs state directly into PostgreSQL  
 - Zero data loss even with concurrent multi-user editing
 
-Real-Time Collaboration in Action — Multiple users editing documents and canvases simultaneously:
+Real-Time Collaboration in Action — Multiple users editing documents and canvases simultaneously: 
 
 <p align="center">
   <video src="https://github.com/user-attachments/assets/c20f3de3-6451-4256-9502-5fbb429c3d3a" autoplay loop muted playsinline width="100%"></video>

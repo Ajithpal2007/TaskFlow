@@ -26,28 +26,29 @@ export default async function CanvasDashboardPage({ params }: { params: { worksp
           Brainstorm, map flows, and collaborate in real-time.
         </p>
       </div>
-
       {/* The Figma-Style Grid */}
       <div className="p-8">
         <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">
           Recently Viewed
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* 🔴 THE BULLETPROOF GRID FIX
+            This automatically creates as many columns as will fit, 
+            guaranteeing cards are never smaller than 280px and never stretch across the screen. 
+        */}
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] auto-rows-fr gap-6">
 
           {/* 1. The "Create New" Card */}
+          {/* Note: Ensure inside CreateBoardButton there are NO "w-full" or hardcoded widths. It should just fill its parent grid cell. */}
           <CreateBoardButton workspaceId={params.workspaceId} />
 
           {/* 2. Map over existing boards */}
-          {/* 2. Map over existing boards */}
           {whiteboards.map((board) => (
-            // 🟢 1. Changed from <Link> to <div> and added `relative`
             <div
               key={board.id}
               className="group relative flex flex-col border rounded-xl overflow-hidden bg-card hover:shadow-md transition-all hover:border-primary/50"
             >
 
-              {/* 🟢 2. The Link now sits invisibly over the whole card */}
               <Link
                 href={`/dashboard/${params.workspaceId}/canvas/${board.id}`}
                 className="absolute inset-0 z-10"
@@ -55,14 +56,12 @@ export default async function CanvasDashboardPage({ params }: { params: { worksp
                 <span className="sr-only">View {board.title}</span>
               </Link>
 
-              {/* 🟢 3. The Delete Button sits on top with a higher z-index (z-20) */}
               <div className="absolute top-3 right-3 z-20">
-                {/* Make sure to pass board.roomId, NOT board.id, since Liveblocks needs the room ID! */}
                 <DeleteBoardButton roomId={board.roomId} />
               </div>
 
-              {/* Conditional Thumbnail Rendering */}
-              <div className="relative h-40 bg-muted/30 border-b flex items-center justify-center group-hover:bg-muted/50 transition-colors overflow-hidden">
+              {/* 🟢 Upgraded to aspect-video (16:9) to keep standard thumbnail proportions */}
+              <div className="relative w-full aspect-video bg-muted/30 border-b flex items-center justify-center group-hover:bg-muted/50 transition-colors overflow-hidden">
                 {board.imageUrl ? (
                   <Image
                     src={board.imageUrl}

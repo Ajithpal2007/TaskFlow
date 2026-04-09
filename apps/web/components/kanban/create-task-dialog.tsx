@@ -128,7 +128,7 @@ export function CreateTaskDialog({ projectId, workspaceId }: { projectId: string
 
   return (
     <Dialog open={isCreateTaskModalOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto ">
+     <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[85vh] overflow-y-auto p-6 rounded-xl">
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>

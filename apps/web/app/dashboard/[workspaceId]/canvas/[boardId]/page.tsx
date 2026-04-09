@@ -1,14 +1,27 @@
 import { prisma } from "@repo/database";
 import { notFound } from "next/navigation";
-import { Whiteboard } from "./_components/whiteboard"; 
 import { BoardTitle } from "./_components/board-title";
+import { Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
+
+// 🔴 THE FIX: Tell Next.js to only render this component in the browser!
+const Whiteboard = dynamic(
+  () => import("./_components/whiteboard").then((m) => m.Whiteboard),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+);
 
 export default async function CanvasRoomPage({
   params,
 }: {
   params: { workspaceId: string; boardId: string };
 }) {
-  // 1. Verify the board exists and grab its Liveblocks Room ID
   const board = await prisma.whiteboard.findUnique({
     where: { 
       id: params.boardId,
@@ -19,7 +32,6 @@ export default async function CanvasRoomPage({
   if (!board) return notFound();
 
   return (
-    // 2. We use a full-screen layout to maximize drawing space
     <div className="h-full w-full bg-background flex flex-col overflow-hidden">
       <div className="h-14 px-4 border-b flex items-center shrink-0 bg-background z-10">
         <BoardTitle 
@@ -29,7 +41,6 @@ export default async function CanvasRoomPage({
         />
       </div>
       
-      {/* 3. Pass the specific roomId to the Client Component */}
       <div className="flex-1 min-h-0 relative">
         <Whiteboard roomId={board.roomId} workspaceId={params.workspaceId} boardId={params.boardId} />
       </div>

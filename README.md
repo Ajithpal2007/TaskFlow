@@ -58,7 +58,7 @@ Frontend (Vercel Edge) and backend (Render PaaS) run on completely different dom
 ### 2. Distributed Observability (The LGTM Stack)
 No console logging in production. Full telemetry pipeline for logs, traces, and metrics.
 
-- **Logs**: Pino + Grafana Loki (structured, batched, async)  
+- **Logs**: Pino + Grafana Loki (structured, batched, async)   
 - **Traces**: OpenTelemetry auto-instrumentation + Grafana Tempo (waterfall tracing across Fastify, Prisma, Redis)  
 - **Metrics**: Prometheus `/metrics` endpoint with custom business counters (workspace creation, AI calls, etc.)
 

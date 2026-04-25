@@ -14,13 +14,16 @@ export async function authRoutes(fastify: FastifyInstance) {
     });
 
     fastify.all("/api/auth/*", async (req, reply) => {
+      const requestOrigin = req.headers.origin;
+      
+      console.log(`[Auth Route] ${req.method} ${req.url} - Origin: ${requestOrigin}`);
 
-      const requestOrigin = req.headers.origin || "https://task-flow-web-seven.vercel.app";
-
-      // 2. Inject the raw headers directly into the Node response
-      reply.raw.setHeader("Access-Control-Allow-Origin", requestOrigin);
+      // Set CORS headers with the actual origin
+      if (requestOrigin) {
+        reply.raw.setHeader("Access-Control-Allow-Origin", requestOrigin);
+      }
       reply.raw.setHeader("Access-Control-Allow-Credentials", "true");
-      reply.raw.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+      reply.raw.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
       reply.raw.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie");
      
       if (req.method === "OPTIONS") {
